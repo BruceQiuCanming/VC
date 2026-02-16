@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HeatBox", "HeatBox.vcproj", "{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug  128|Win32 = Debug  128|Win32
+		Debug XinQiNeng|Win32 = Debug XinQiNeng|Win32
+		Release 128|Win32 = Release 128|Win32
+		Release ChengHong 128|Win32 = Release ChengHong 128|Win32
+		XinQiNeng|Win32 = XinQiNeng|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug  128|Win32.ActiveCfg = Debug  128|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug  128|Win32.Build.0 = Debug  128|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug XinQiNeng|Win32.ActiveCfg = Debug XinQiNeng|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug XinQiNeng|Win32.Build.0 = Debug XinQiNeng|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release 128|Win32.ActiveCfg = Release 128|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release 128|Win32.Build.0 = Release 128|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release ChengHong 128|Win32.ActiveCfg = Release ChengHong 128|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release ChengHong 128|Win32.Build.0 = Release ChengHong 128|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.XinQiNeng|Win32.ActiveCfg = XinQiNeng|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.XinQiNeng|Win32.Build.0 = XinQiNeng|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

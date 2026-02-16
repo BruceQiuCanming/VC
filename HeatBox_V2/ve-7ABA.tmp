@@ -1,0 +1,4229 @@
+// RecordViewDlg.cpp : implementation file
+//4821 6825
+
+#include "stdafx.h"
+#include "HeatBox.h"
+#include "RecordViewDlg.h"
+#include "ProductTempBar.h"
+#include "RecordPrintPriew.h"
+#include "ChanliangTongjiDlg.h"
+#include "SwitchDlg.h"
+#include "TakeDlg.h"
+#include <stdio.h>
+#include "ChanliangTongjiDlg.h"
+#include "FullScreenCurve.h"
+
+#include "shlwapi.h"
+
+#pragma comment(lib,"shlwapi.lib")
+
+
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#undef THIS_FILE
+static char THIS_FILE[] = __FILE__;
+#endif
+
+extern TCHAR level_str_4_csv[18][10];
+/////////////////////////////////////////////////////////////////////////////
+// CRecordViewDlg dialog
+
+CString strParaName[] =
+{
+		"产品规格",
+		"产品类型",
+	    "主规格",
+		"主规负偏差",
+		"主规正偏差",
+		"高规格",
+		"高规负偏差",
+		"高规正偏差",
+		"低规格",
+		"低规负偏差",
+		"低规正偏差",
+		"主规复位温度",
+		"主规复位负偏差",
+		"主规复位正偏差",
+		"高规复位温度",
+		"高规复位负偏差",
+		"高规复位正偏差",
+		"低规复位温度",
+		"低规复位负偏差",
+		"低规复位正偏差",
+		"开门复位"
+};
+
+extern TEST_RESULT_LEVEL CheckTestLevel(SWITCH_CONFIG_PARA SwitchConfigPara,
+			SWITCH_TEST_RESULT SwitchTestResult);
+
+void TongJi(double *open_max_temp, double *open_min_temp, double *open_avr_temp, double *close_max_temp, double *close_min_temp, double *close_avr_temp, int *total_product, int *total_main_level,SWITCH_CONFIG_PARA ConfigPara,SWITCH_TEST_RESULT_EX* TestResult,BOOL bTestCloseLevel,HEAT_BOX_TYPE m_HeatBoxType,int BoxNr,int CurGroupNr)
+{
+		CString str;
+		(*open_max_temp)	= 0.0f;
+		(*open_min_temp)	= 999.9f;
+		(*open_avr_temp)	= 0.0f;
+		(*close_max_temp)	= 0.0f;
+		(*close_min_temp)	= 999.9f;
+		(*close_avr_temp)	= 0.0f;
+		(*total_product)	= 0;
+		(*total_main_level) = 0;
+		int  open_count=0,close_count=0;  
+		int j;
+		float temp;
+
+		for(j = 0; j < G_iMaxLedNr;j++)
+		{
+			if(CurGroupNr != TestResult[j].result.Group )
+			{
+				continue;
+			}
+
+			if(TestResult[j].result.IsUsed)
+			{
+				(*total_product) ++;
+			}
+				switch(AfxGetApp()->GetProfileIntW(_T("SETTING"),_T("PRINT TYPE"),0))
+				{
+				case 1:
+					switch(CheckTestLevel(ConfigPara,TestResult[j].result))
+					{
+					case MAIN_LEVEL:
+					case HIGH_LEVEL:
+					case LOW_LEVEL:
+						break;
+				
+					default:
+						continue;
+					}
+					break;
+				case 2:
+					switch(CheckTestLevel(ConfigPara,TestResult[j].result))
+					{
+					case MAIN_LEVEL:
+						break;
+					default:
+						continue;					;
+					}
+					break;
+				
+				}
+
+			
+
+			switch(CheckTestLevel(ConfigPara,TestResult[j].result))
+			{
+			case MAIN_LEVEL:
+				(*total_main_level) ++;
+				break;
+			case HIGH_LEVEL:
+				(*total_main_level) ++;
+				break;
+			case LOW_LEVEL:
+				(*total_main_level) ++;
+				break;
+			case NOT_USED:
+				break;
+			}
+			temp = TestResult[j].result.OpenTemp ;
+			if(temp > 0.0f && temp < 200.0f)
+			{
+				if((*open_max_temp) < temp)
+				{
+					(*open_max_temp) = temp;
+				}
+				if((*open_min_temp) > temp)
+				{
+					(*open_min_temp) = temp;
+				}
+				(*open_avr_temp) += temp;
+				open_count ++;
+			}
+			
+			temp = TestResult[j].result.CloseTemp ;
+			if(temp > 0.0f && temp < 200.0f)
+			{
+				if((*close_max_temp) < temp)
+				{
+					(*close_max_temp) = temp;
+				}
+				if((*close_min_temp) > temp)
+				{
+					(*close_min_temp) = temp;
+				}
+				(*close_avr_temp) += temp;
+				close_count ++;
+			}
+			
+		}
+		if(open_count > 0)
+		{
+			(*open_avr_temp) = (*open_avr_temp) / open_count;
+		}
+		if(close_count > 0)
+		{
+			(*close_avr_temp) = (*close_avr_temp) / close_count;
+		}
+}
+
+extern CString G_sCompany;
+void PrintReport_bmp(CDC *dc,CRect page_rect,CString Title ,int BoxNr, CTime BeginTime,CTime EndTime,
+				 CString TestParaName,CString ProduceType,CString TestMemo,SWITCH_CONFIG_PARA ConfigPara,SWITCH_TEST_RESULT_EX* TestResult,BOOL bTestCloseLevel,int start_switch_nr,int end_switch_nr,HEAT_BOX_TYPE HeatBoxType,int CurGroupNr)
+{
+	Title = _T("热保护器测试报告");
+//#define MAX_LED_NR_128	
+	CFont *font=dc->GetCurrentFont();  
+	LOGFONT logfont; 
+	font->GetLogFont(&logfont); 
+
+	
+	CString str;
+	
+	
+	
+	CBrush whitebrush(COLORREF(RGB(255,255,255)));
+	dc->FillRect(page_rect,&whitebrush);
+
+	int FontPoint = page_rect.right / 2;
+
+	
+	CFont newFont;
+	CFont* oldFont;
+	CSize chnSize;
+	while(1)
+	{
+		newFont.CreatePointFont(FontPoint,_T("宋体"),dc);
+		oldFont = dc->SelectObject(&newFont);
+		chnSize = dc->GetTextExtent(_T("编号 动作温 复位温 判定结果 "));
+		if(page_rect.right  >= (4 *  chnSize.cx))
+		{
+			break;
+		}
+		FontPoint -= 20;
+		newFont.DeleteObject();
+		dc->SelectObject(oldFont);
+	}
+	oldFont->DeleteObject();
+	
+	CPen pen(PS_SOLID,chnSize.cy / 8,RGB(0x00,0x00,0x00));
+	CPen *oldPen = dc->SelectObject(&pen);
+	oldPen->DeleteObject();
+	
+	chnSize = dc->GetTextExtent(_T("国"));
+	
+	chnSize.cy  = chnSize.cy *1.5;
+	int cur_x,cur_y;
+	cur_x = page_rect.right/3;
+	cur_y = chnSize.cy;
+
+	dc->TextOut(cur_x,cur_y, Title);
+
+#ifdef _XinQiNeng
+	G_sCompany = AfxGetApp()->GetProfileStringW(_T("SETTING"),_T("USER"),_T("常州市电子科技有限公司")) ;
+#else
+	G_sCompany = AfxGetApp()->GetProfileStringW(_T("SETTING"),_T("USER"),_T("常州市润邦电子科技有限公司")) ;
+#endif
+	CString sCompany = _T("公司名称:");
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	
+	sCompany += G_sCompany;
+
+	dc->TextOut(cur_x,cur_y, sCompany);
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	
+
+	CString sVal;
+	//产品规格
+	sVal = _T("产品规格:") + TestParaName; 
+	dc->TextOut(cur_x,cur_y, sVal);
+	//产品类型
+	sVal = _T("产品类型:")+ProduceType;
+	dc->TextOut(cur_x+chnSize.cx * 16,cur_y,sVal);
+	
+	sVal = _T("测试说明:")+TestMemo;
+	dc->TextOut(cur_x+chnSize.cx * 32,cur_y,sVal);
+
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	str.Format(_T("烘箱编号: %d"), BoxNr + 1); 
+	str += _T("  开始测试时间: ");
+	sVal.Format(_T("%04d-%02d-%02d %02d:%02d"),BeginTime.GetYear(),BeginTime.GetMonth(),BeginTime.GetDay(),BeginTime.GetHour(),BeginTime.GetMinute());
+	str += sVal;
+	str += _T("   结束测试时间: ");
+	sVal.Format(_T("%04d-%02d-%02d %02d:%02d"),EndTime.GetYear(),EndTime.GetMonth(),EndTime.GetDay(),EndTime.GetHour(),EndTime.GetMinute()); 
+	str += sVal;
+	dc->TextOut(cur_x,cur_y, str);
+
+	CSize nr_Size = dc->GetTextExtent(_T("编号 "));
+	CSize open_temp_Size = dc->GetTextExtent(_T("动作温 "));
+	CSize close_temp_Size = dc->GetTextExtent(_T("复位温 "));
+	CSize level_Size = dc->GetTextExtent(_T("判定结果 "));
+
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy);
+	str = _T("编号 动作温 复位温 判定结果 ");
+	CSize title_Size = dc->GetTextExtent(str);
+	int prn_col = page_rect.right / title_Size.cx;
+	int i;
+
+	for(i = 0; i < prn_col; i++)
+	{
+		dc->TextOut(cur_x,cur_y + chnSize.cy* 0.3, str);
+		cur_x += page_rect.right / prn_col;
+	}
+
+	int table_start_y = cur_y;
+
+	cur_y += (int)(chnSize.cy *1.5);
+	
+
+	int prn_row = (int)((page_rect.bottom - cur_y) / (chnSize.cy *1.0));
+
+	if(prn_row > (128 / prn_col))
+	{
+		prn_row = (128 / prn_col);
+	}
+
+	double open_max_temp = 0.0f;
+	double open_min_temp = 999.0f;
+	double close_max_temp = 0.0f;
+	double close_min_temp = 999.0f;
+	//double max_open_temp_level;
+	//double min_open_temp_level;
+	//double max_close_temp_level;
+	//double min_close_temp_level;
+	
+	CONTROL_TEMP_RANGE temp_range;
+
+	double max_temp = -999;
+	double min_temp =  999;
+
+	
+	CheckHeatOrCoolMode(ConfigPara,&temp_range);
+
+//	max_open_temp_level = ConfigPara.HighLevel+ConfigPara.HighLevelSpanPlus;
+//	min_open_temp_level = ConfigPara.LowLevel -ConfigPara.LowLevelSpanMinus; 
+
+//	max_close_temp_level = ConfigPara.CloseLevel+ConfigPara.CloseLevelSpanPlus;
+//	min_close_temp_level = ConfigPara.CloseLevel-ConfigPara.CloseLevelSpanMinus; 
+
+	int count = 0;
+
+	for(i=0; i < G_iMaxLedNr / 8 ; i++)
+	{
+		count = 0;
+		for(int j = 0;j < 8; j++)
+		{
+			if(TestResult[i* 8 + j].result.IsCloseFlash)
+			{
+				count ++;
+			}
+		}
+		if( count >= 6)
+		{
+			for(int j = 0;j < 8; j++)
+			{
+				TestResult[i* 8 + j].result.IsCloseFlash = false;
+			}
+		}
+
+		count = 0;
+		for(int j = 0;j < 8; j++)
+		{
+			if(TestResult[i* 8 + j].result.IsOpenFlash)
+			{
+				count ++;
+			}
+		}
+		if( count >= 4)
+		{
+			for(int j = 0;j < 8; j++)
+			{
+				TestResult[i* 8 + j].result.IsOpenFlash = false;
+			}
+		}
+	}
+
+
+
+	int   main_level = 0,total_switch = 0;
+
+	for(i = 0; i < prn_row; i++)
+	{
+		for(int j = 0; j < prn_col; j++)
+		{
+			cur_x = j * page_rect.right / prn_col;
+			if(i+prn_row*j <= end_switch_nr - start_switch_nr)
+
+			{
+				int index = i+prn_row * j + start_switch_nr;
+				
+				if(G_iMaxLedNr == 192)
+				{
+					if((TestResult[index].ID % 12) < 9)
+					{
+						str.Format(_T("%02d%d"),TestResult[index].ID /12,(TestResult[index].ID%12)+1 );				
+					}
+					else if((TestResult[index].ID % 12) == 9)
+					{
+						str.Format(_T("%02d0"),TestResult[index].ID/12 + 1);				
+					}
+					else if((TestResult[index].ID % 12) == 10)
+					{
+						str.Format(_T("%02dA"),TestResult[index].ID/12 + 1);				
+					}
+					else if((TestResult[index].ID % 12) == 11)
+					{
+						str.Format(_T("%02dB"),TestResult[index].ID/12 +1);				
+					}
+				}
+				else
+				{
+					str.Format(_T("%3d"),TestResult[index].ID+1); 
+				}
+				
+
+				dc->TextOut(cur_x,cur_y, str);
+				cur_x += nr_Size.cx;
+				switch(AfxGetApp()->GetProfileIntW(_T("SETTING"),_T("PRINT TYPE"),0))
+				{
+				case 1:
+					switch(CheckTestLevel(ConfigPara,TestResult[index].result))
+					{
+					case MAIN_LEVEL:
+					case HIGH_LEVEL:
+					case LOW_LEVEL:
+						break;
+				
+					default:
+						continue						;
+					}
+					break;
+				case 2:
+					switch(CheckTestLevel(ConfigPara,TestResult[index].result))
+					{
+					case MAIN_LEVEL:
+						break;
+					default:
+						continue						;
+					}
+					break;
+				
+				default:
+					
+					break;
+				}
+				double open_temp = TestResult[index].result.OpenTemp;
+				str.Format(_T("%5.1f"),open_temp);
+				if(open_temp <= 0.0f || open_temp >= 300.0f)
+				{
+					str = "-";
+				}
+				else if(open_temp > temp_range.open_temp_max || open_temp < temp_range.open_temp_min)
+				{
+					str +="X";
+				}
+				
+				if(TestResult[index].result.IsOpenFlash)
+				{
+					if(TestResult[index].result.IsUsed)
+					{
+						str += "V";
+					}
+				}
+				dc->TextOut(cur_x,cur_y, str);
+				cur_x += open_temp_Size.cx;
+				
+				
+				double close_temp = TestResult[index].result.CloseTemp;;
+				str.Format(_T("%5.1f"),close_temp);
+				if(close_temp <= 0.0f || close_temp >= 300.0f)
+				{
+					str = _T("");
+				}
+				else if(close_temp > temp_range.close_temp_max  || close_temp < temp_range.close_temp_min)
+				{
+					str +=_T("X");
+				}
+
+				if(TestResult[index].result.IsCloseFlash)
+				{
+					if(TestResult[index].result.IsUsed) 
+						str += _T("V");
+				}
+				dc->TextOut(cur_x,cur_y, str);
+				cur_x += close_temp_Size.cx;
+				
+				switch(CheckTestLevel(ConfigPara,TestResult[index].result))
+				{
+				case MAIN_LEVEL:
+					main_level ++;
+					str =_T( "");//"主规格";
+					break;
+				case OVER_HIGH_LEVEL:
+					str = _T("高温品");
+					break;
+				case OVER_LOW_LEVEL:
+					str = _T("低温品");
+					break;
+				case HIGH_LEVEL:
+					str =_T("高规格G");
+					break;
+				case LOW_LEVEL:
+					str =_T("低规格D");
+					break;
+				case CLOSE_LOW_LEVEL:
+					str = _T("复大品X");
+					break;
+				case CLOSE_HIGH_LEVEL:
+					str = _T("复小品X");
+					break;
+				case OPEN_FLASH_LEVEL:
+					str = _T("动闪V");
+					break;
+				case CLOSE_FLASH_LEVEL:
+					str = _T("复闪V");
+					break;
+				case OPEN_DOOR_RESET_LEVEL:
+					str = _T("开门复位X");
+					break;
+				case NOT_USED:
+					str = _T("无产品");
+					break;
+				default:
+					str = _T("高低复大小");
+					break;
+				}
+				
+				dc->TextOut(cur_x,cur_y, str);
+				cur_x += level_Size.cx;
+				str = "";
+
+				if(NOT_USED == CheckTestLevel(ConfigPara,TestResult[index].result))
+				{}
+				else
+				{
+					total_switch ++;
+					if(open_temp > 0)
+					{
+						if(open_temp > open_max_temp)
+						{
+							open_max_temp = open_temp;
+						}
+						if(open_temp < open_min_temp)
+						{
+							open_min_temp = open_temp;
+						}
+					}
+					if(close_temp > 0)
+					{
+						if(close_temp > close_max_temp)
+						{
+							close_max_temp = close_temp;
+						}
+						if(close_temp < close_min_temp)
+						{
+							close_min_temp = close_temp;
+						}
+					}
+				}
+				
+			}
+		}
+		
+		cur_y += (int)(chnSize.cy);
+	}
+
+	
+	for(i = 0; i <= prn_row + 1; i++)
+	{
+		dc->MoveTo(0,table_start_y + i * chnSize.cy + chnSize.cy* 0.3);
+		dc->LineTo(page_rect.right,table_start_y + i * chnSize.cy + chnSize.cy*0.3); 
+	}
+	
+	
+	for(i = 0; i < prn_col; i++)
+	{
+		cur_x = i*page_rect.right / prn_col;
+		int start_y = table_start_y + chnSize.cy* 0.3;
+		int end_y = table_start_y + (prn_row + 1) * chnSize.cy + chnSize.cy*0.3;
+		dc->MoveTo(cur_x, start_y);
+		dc->LineTo(cur_x, end_y);
+
+		dc->MoveTo(cur_x+nr_Size.cx, start_y);
+		dc->LineTo(cur_x+nr_Size.cx, end_y);
+
+		dc->MoveTo(cur_x+nr_Size.cx+ open_temp_Size.cx, start_y);
+		dc->LineTo(cur_x+nr_Size.cx+ open_temp_Size.cx, end_y);
+		
+		dc->MoveTo(cur_x+nr_Size.cx+ open_temp_Size.cx+ close_temp_Size.cx, start_y);
+		dc->LineTo(cur_x+nr_Size.cx+ open_temp_Size.cx+ close_temp_Size.cx, end_y);
+
+		dc->MoveTo((i+1)*page_rect.right / prn_col - 1, start_y);
+		dc->LineTo((i+1)*page_rect.right / prn_col - 1, end_y);
+		
+	}
+	
+	
+//	cur_y += (int)(chnSize.cy *1.0);
+
+	double open_avr_temp,close_avr_temp;
+	int total_product = 0,total_main_level = 0;
+
+	TongJi(&open_max_temp, &open_min_temp, &open_avr_temp, &close_max_temp, &close_min_temp, &close_avr_temp, &total_product, &total_main_level,
+		ConfigPara,TestResult,bTestCloseLevel,HeatBoxType,BoxNr,CurGroupNr);
+	
+	table_start_y = cur_y;
+	
+	cur_x = chnSize.cx ;
+	dc->TextOut(cur_x,cur_y, _T("产品数"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%d"),total_product);
+	dc->TextOut(cur_x,cur_y, str);
+
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("合格品"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%d"),total_main_level);
+	dc->TextOut(cur_x,cur_y, str);
+
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("合格率"));
+	cur_x += page_rect.right /6;
+	if(total_product > 0)
+	{
+		str.Format(_T("%5.1f%%"),(float)(total_main_level*100.0f/total_product));
+	}
+	else
+	{
+		str = _T("   0.0%");
+	}
+	dc->TextOut(cur_x,cur_y, str);
+	
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	
+	dc->TextOut(cur_x,cur_y, _T("动作最高温"));
+	
+	cur_x += page_rect.right /6;
+	if(total_product > 0)
+	{
+		str.Format(_T("%5.1f"),open_max_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(cur_x,cur_y, str);
+
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("动作最低温"));
+	cur_x += page_rect.right /6;
+	if(total_product > 0  && open_min_temp < 400)
+	{
+		str.Format(_T("%5.1f"),open_min_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(cur_x,cur_y, str);
+
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("动作平均温"));
+	cur_x += page_rect.right /6;
+	if(total_product > 0)
+	{
+		str.Format(_T("%5.1f"),open_avr_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(cur_x,cur_y, str);
+	
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	dc->TextOut(cur_x,cur_y, _T("复位最高温"));
+	cur_x += page_rect.right /6;
+	if(total_product > 0)
+	{
+		str.Format(_T("%5.1f"),close_max_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(cur_x,cur_y, str);
+
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("复位最低温"));
+	cur_x += page_rect.right /6;
+	if(total_product > 0 && close_min_temp < 400)
+	{
+		str.Format(_T("%5.1f"),close_min_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(cur_x,cur_y, str);
+
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("复位平均温"));
+	cur_x += page_rect.right /6;
+	if(total_product > 0)
+	{
+		str.Format(_T("%5.1f"),close_avr_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(cur_x,cur_y, str);
+
+	cur_y += (int)(chnSize.cy);
+
+	//CPen pen2(PS_SOLID,chnSize.cy / 8,RGB(0x00,0x00,0x00));
+	//oldPen = dc->SelectObject(&pen2);
+	//oldPen->DeleteObject();
+
+	for(i = 0; i <= 7; i++)
+	{
+		cur_x = i*page_rect.right / 6;
+		int start_y = table_start_y;
+		dc->MoveTo(cur_x, start_y);
+		dc->LineTo(cur_x, cur_y);
+
+		dc->MoveTo(cur_x+page_rect.right / 6 - 1, start_y);
+		dc->LineTo(cur_x+page_rect.right / 6 - 1, cur_y);
+	}
+
+	for(i = 0; i <= 3; i++)
+	{
+		int start_y = table_start_y + i * chnSize.cy ;
+		//int end_y = cur_y;
+		dc->MoveTo(0, start_y);
+		dc->LineTo(page_rect.right, start_y);
+	}
+
+	
+	cur_y += (int)(chnSize.cy / 2);
+	table_start_y = cur_y;
+
+	cur_x = chnSize.cx;
+	dc->TextOut(cur_x,cur_y, _T("主规格温度"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.MainLevel);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("主规负偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),-ConfigPara.MainLevelSpanMinus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("主规正偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.MainLevelSpanPlus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+//
+	cur_x = chnSize.cx;
+	dc->TextOut(cur_x,cur_y, _T("复位温度"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLevel);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("复位负偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseLevelSpanMinus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("复位正偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLevelSpanPlus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+//
+	cur_x = chnSize.cx;
+	dc->TextOut(cur_x,cur_y, _T("高规格温度"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.HighLevel);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("高规负偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),-ConfigPara.HighLevelSpanMinus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("高规正偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.HighLevelSpanPlus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	dc->TextOut(cur_x,cur_y, _T("复位温度"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseHighLevel);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("复位负偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseHighLevelSpanMinus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("复位正偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseHighLevelSpanPlus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	//
+		cur_x = chnSize.cx;
+	dc->TextOut(cur_x,cur_y, _T("低规格温度"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.LowLevel);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("低规负偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),-ConfigPara.LowLevelSpanMinus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("低规正偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.LowLevelSpanPlus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	dc->TextOut(cur_x,cur_y, _T("复位温度"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLowLevel);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("复位负偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseLowLevelSpanMinus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_x += page_rect.right /6;
+	dc->TextOut(cur_x,cur_y, _T("复位正偏差"));
+	cur_x += page_rect.right /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLowLevelSpanPlus);
+	dc->TextOut(cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+//	CPen pen3(PS_SOLID,chnSize.cy / 8,RGB(0x00,0x00,0x00));
+//	oldPen = dc->SelectObject(&pen3);
+//	oldPen->DeleteObject();
+
+	for(i = 0; i <= 7; i++)
+	{
+		cur_x = i*page_rect.right / 6;
+		int start_y = table_start_y;
+		dc->MoveTo(cur_x, start_y);
+		dc->LineTo(cur_x, cur_y);
+
+		dc->MoveTo(cur_x+page_rect.right / 6 - 1, start_y);
+		dc->LineTo(cur_x+page_rect.right / 6 - 1, cur_y);
+	}
+	for(i = 0; i <= 6; i++)
+	{
+		int start_y = table_start_y + i * chnSize.cy ;
+		//int end_y = cur_y;
+		dc->MoveTo(0, start_y);
+		dc->LineTo(page_rect.right, start_y);
+	}
+
+	
+	
+	//dc->TextOut(page_rect.right/2,page_rect.bottom - chnSize.cy, "制表： 常州市润邦电子科技有限公司 TEL:018052531601,013915838598");
+
+}
+
+void PrintReport(CDC *dc,CString Title ,int BoxNr, CTime BeginTime,CTime EndTime,
+				 CString TestParaName,CString ProduceType,CString TestMemo,SWITCH_CONFIG_PARA ConfigPara,SWITCH_TEST_RESULT_EX* TestResult,BOOL bTestCloseLevel,int start_switch_nr,int end_switch_nr,HEAT_BOX_TYPE HeatBoxType,int CurGroupNr)
+{
+
+	Title = _T("热保护器测试报告");
+//#define MAX_LED_NR_128	
+	CFont *font=dc->GetCurrentFont();  
+	LOGFONT logfont; 
+	font->GetLogFont(&logfont); 
+#define LEFT_WIDTH	100
+	CRect page_rect;
+	CString str;
+	
+	page_rect.left = 0;
+	page_rect.right = dc->GetDeviceCaps(HORZRES);
+	page_rect.top = 0; 
+	page_rect.bottom = dc->GetDeviceCaps(VERTRES);   
+
+	page_rect.bottom = page_rect.right * 7008 / 4950 ;//A4
+
+	
+	CBrush whitebrush(COLORREF(RGB(255,255,255)));
+	dc->FillRect(page_rect,&whitebrush);
+
+	int FontPoint = page_rect.right / 2;
+
+	
+	CFont newFont;
+	CFont* oldFont;
+	CSize chnSize;
+	while(1)
+	{
+		newFont.CreatePointFont(FontPoint,_T("宋体"),dc);
+		oldFont = dc->SelectObject(&newFont);
+		chnSize = dc->GetTextExtent(_T("编号 动作温 复位温 判定结果 "));
+		if((page_rect.right - LEFT_WIDTH *2) >= (4 *  chnSize.cx))
+		{
+			break;
+		}
+		FontPoint -= 20;
+		newFont.DeleteObject();
+		dc->SelectObject(oldFont);
+	}
+	oldFont->DeleteObject();
+	
+	CPen pen(PS_SOLID,chnSize.cy / 8,RGB(0x00,0x00,0x00));
+	CPen *oldPen = dc->SelectObject(&pen);
+	oldPen->DeleteObject();
+	
+	chnSize = dc->GetTextExtent(_T("国"));
+	
+	chnSize.cy  = chnSize.cy *1.5;
+	int cur_x,cur_y;
+	cur_x = page_rect.right/3;
+	cur_y = chnSize.cy;
+
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, Title);
+	
+	G_sCompany = AfxGetApp()->GetProfileStringW(_T("SETTING"),_T("USER"),_T("常州市润邦电子科技有限公司")) ;
+
+	CString sCompany = _T("公司名称:");
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	
+	sCompany += G_sCompany;
+
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, sCompany);
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	
+
+	CString sVal;
+	//产品规格
+	sVal = _T("产品规格:") + TestParaName; 
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, sVal);
+	//产品类型
+	sVal = _T("产品类型:")+ProduceType;
+	dc->TextOut(LEFT_WIDTH + cur_x+chnSize.cx * 16,cur_y,sVal);
+	
+	sVal = _T("测试说明:")+TestMemo;
+	dc->TextOut(LEFT_WIDTH + cur_x+chnSize.cx * 32,cur_y,sVal);
+
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	str.Format(_T("烘箱编号: %d"), BoxNr + 1); 
+	str += _T("  开始测试时间: ");
+	sVal.Format(_T("%04d-%02d-%02d %02d:%02d"),BeginTime.GetYear(),BeginTime.GetMonth(),BeginTime.GetDay(),BeginTime.GetHour(),BeginTime.GetMinute());
+	str += sVal;
+	str += _T("   结束测试时间: ");
+	sVal.Format(_T("%04d-%02d-%02d %02d:%02d"),EndTime.GetYear(),EndTime.GetMonth(),EndTime.GetDay(),EndTime.GetHour(),EndTime.GetMinute()); 
+	str += sVal;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+	CSize nr_Size = dc->GetTextExtent(_T("编号 "));
+	CSize open_temp_Size = dc->GetTextExtent(_T("动作温 "));
+	CSize close_temp_Size = dc->GetTextExtent(_T("复位温 "));
+	CSize level_Size = dc->GetTextExtent(_T("判定结果 "));
+
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy);
+	str = _T("编号 动作温 复位温 判定结果 ");
+	CSize title_Size = dc->GetTextExtent(str);
+	int prn_col = (page_rect.right - LEFT_WIDTH *2)/ title_Size.cx;
+	int i;
+
+	for(i = 0; i < prn_col; i++)
+	{
+		dc->TextOut(LEFT_WIDTH+cur_x,cur_y + chnSize.cy* 0.3, str);
+		cur_x += (page_rect.right - LEFT_WIDTH *2) / prn_col;
+	}
+
+	int table_start_y = cur_y;
+
+	cur_y += (int)(chnSize.cy *1.5);
+	
+
+	int prn_row = (int)((page_rect.bottom - cur_y) / (chnSize.cy *1.0));
+
+	if(prn_row > (128 / prn_col))
+	{
+		prn_row = (128 / prn_col);
+	}
+
+	double open_max_temp = 0.0f;
+	double open_min_temp = 999.0f;
+	double close_max_temp = 0.0f;
+	double close_min_temp = 999.0f;
+	double max_open_temp_level;
+	double min_open_temp_level;
+	double max_close_temp_level;
+	double min_close_temp_level;
+	
+	
+	max_open_temp_level = ConfigPara.HighLevel+ConfigPara.HighLevelSpanPlus;
+	min_open_temp_level = ConfigPara.LowLevel -ConfigPara.LowLevelSpanMinus; 
+
+	max_close_temp_level = ConfigPara.CloseLevel+ConfigPara.CloseLevelSpanPlus;
+	min_close_temp_level = ConfigPara.CloseLevel-ConfigPara.CloseLevelSpanMinus; 
+
+	int count = 0;
+
+	for(i=0; i < G_iMaxLedNr / 8 ; i++)
+	{
+		count = 0;
+		for(int j = 0;j < 8; j++)
+		{
+			if(TestResult[i* 8 + j].result.IsCloseFlash)
+			{
+				count ++;
+			}
+		}
+		if( count >= 4)
+		{
+			for(int j = 0;j < 8; j++)
+			{
+				TestResult[i* 8 + j].result.IsCloseFlash = false;
+			}
+		}
+
+		count = 0;
+		for(int j = 0;j < 8; j++)
+		{
+			if(TestResult[i* 8 + j].result.IsOpenFlash)
+			{
+				count ++;
+			}
+		}
+		if( count >= 4)
+		{
+			for(int j = 0;j < 8; j++)
+			{
+				TestResult[i* 8 + j].result.IsOpenFlash = false;
+			}
+		}
+	}
+
+
+
+	int   main_level = 0,total_switch = 0;
+
+	for(i = 0; i < prn_row; i++)
+	{
+		for(int j = 0; j < prn_col; j++)
+		{
+			cur_x = j * (page_rect.right - LEFT_WIDTH *2)/ prn_col;
+			if(i+prn_row*j <= end_switch_nr - start_switch_nr)
+
+			{
+				int index = i+prn_row * j + start_switch_nr;
+				
+				if(G_iMaxLedNr == 192)
+				{
+					if((TestResult[index].ID % 12) < 9)
+					{
+						str.Format(_T("%02d%d"),TestResult[index].ID /12,(TestResult[index].ID%12)+1 );				
+					}
+					else if((TestResult[index].ID % 12) == 9)
+					{
+						str.Format(_T("%02d0"),TestResult[index].ID/12 + 1);				
+					}
+					else if((TestResult[index].ID % 12) == 10)
+					{
+						str.Format(_T("%02dA"),TestResult[index].ID/12 + 1);				
+					}
+					else if((TestResult[index].ID % 12) == 11)
+					{
+						str.Format(_T("%02dB"),TestResult[index].ID/12 +1);				
+					}
+				}
+				else
+				{
+					if(CurGroupNr == 0 ||  ::G_NormalConfigPara.Group[BoxNr][index] == CurGroupNr)
+					{
+						str.Format(_T("%3d"),TestResult[index].ID+1); 
+					}
+					else
+					{
+						str = _T("");
+					}
+				}
+				
+
+				dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+				cur_x += nr_Size.cx;
+				switch(AfxGetApp()->GetProfileIntW(_T("SETTING"),_T("PRINT TYPE"),0))
+				{
+				case 1:
+					switch(CheckTestLevel(ConfigPara,TestResult[index].result))
+					{
+					case MAIN_LEVEL:
+					case HIGH_LEVEL:
+					case LOW_LEVEL:
+						break;
+				
+					default:
+						continue						;
+					}
+					break;
+				case 2:
+					switch(CheckTestLevel(ConfigPara,TestResult[index].result))
+					{
+					case MAIN_LEVEL:
+						break;
+					default:
+						continue						;
+					}
+					break;
+				
+				default:
+					
+					break;
+				}
+				double open_temp = TestResult[index].result.OpenTemp;
+				str.Format(_T("%5.1f"),open_temp);
+				if(open_temp <= 0.0f || open_temp >= 300.0f)
+				{
+					str = "-";
+				}
+				else if(open_temp > max_open_temp_level || open_temp < min_open_temp_level)
+				{
+					str +="X";
+				}
+				
+				if(TestResult[index].result.IsOpenFlash)
+				{
+					if(TestResult[index].result.IsUsed)
+					{
+						str += "V";
+					}
+				}
+				if(CurGroupNr == 0 ||  ::G_NormalConfigPara.Group[BoxNr][index] == CurGroupNr)
+				{
+					dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+				}
+				cur_x += open_temp_Size.cx;
+				
+				
+				double close_temp = TestResult[index].result.CloseTemp;;
+				str.Format(_T("%5.1f"),close_temp);
+				if(close_temp <= 0.0f || close_temp >= 300.0f)
+				{
+					str = _T("");
+				}
+				else if(close_temp > max_close_temp_level || close_temp < min_close_temp_level)
+				{
+					str +=_T("X");
+				}
+
+				if(TestResult[index].result.IsCloseFlash)
+				{
+					if(TestResult[index].result.IsUsed) 
+						str += _T("V");
+				}
+				if(CurGroupNr == 0 ||  ::G_NormalConfigPara.Group[BoxNr][index] == CurGroupNr)
+				{
+					dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+				}
+				cur_x += close_temp_Size.cx;
+				
+				switch(CheckTestLevel(ConfigPara,TestResult[index].result))
+				{
+				case MAIN_LEVEL:
+					main_level ++;
+					str =_T( "");//"主规格";
+					break;
+				case OVER_HIGH_LEVEL:
+					str = _T("高温品");
+					break;
+				case OVER_LOW_LEVEL:
+					str = _T("低温品");
+					break;
+				case HIGH_LEVEL:
+					str =_T("高规格G");
+					break;
+				case LOW_LEVEL:
+					str =_T("低规格D");
+					break;
+				case CLOSE_LOW_LEVEL:
+					str = _T("复大品X");
+					break;
+				case CLOSE_HIGH_LEVEL:
+					str = _T("复小品X");
+					break;
+				case OPEN_FLASH_LEVEL:
+					str = _T("动闪V");
+					break;
+				case CLOSE_FLASH_LEVEL:
+					str = _T("复闪V");
+					break;
+				case OPEN_DOOR_RESET_LEVEL:
+					str = _T("开门复位X");
+					break;
+				case NOT_USED:
+					str = _T("无产品");
+					break;
+				default:
+					str = _T("高低复大小");
+					break;
+				}
+				if(CurGroupNr == 0 ||  ::G_NormalConfigPara.Group[BoxNr][index] == CurGroupNr)
+				{
+					dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+				}
+				cur_x += level_Size.cx;
+				str = "";
+
+				if(NOT_USED == CheckTestLevel(ConfigPara,TestResult[index].result))
+				{}
+				else
+				{
+					total_switch ++;
+					if(open_temp > 0)
+					{
+						if(open_temp > open_max_temp)
+						{
+							open_max_temp = open_temp;
+						}
+						if(open_temp < open_min_temp)
+						{
+							open_min_temp = open_temp;
+						}
+					}
+					if(close_temp > 0)
+					{
+						if(close_temp > close_max_temp)
+						{
+							close_max_temp = close_temp;
+						}
+						if(close_temp < close_min_temp)
+						{
+							close_min_temp = close_temp;
+						}
+					}
+				}
+				
+			}
+		}
+		
+		cur_y += (int)(chnSize.cy);
+	}
+
+	
+	for(i = 0; i <= prn_row + 1; i++)
+	{
+		dc->MoveTo(LEFT_WIDTH,table_start_y + i * chnSize.cy + chnSize.cy* 0.3);
+		dc->LineTo(page_rect.right - LEFT_WIDTH ,table_start_y + i * chnSize.cy + chnSize.cy*0.3); 
+	}
+	
+	
+	for(i = 0; i <= prn_col; i++)
+	{
+		cur_x = i*(page_rect.right - LEFT_WIDTH * 2) / prn_col;
+		int start_x = table_start_y + chnSize.cy* 0.3;
+		int end_y = table_start_y + (prn_row + 1) * chnSize.cy + chnSize.cy*0.3;
+		dc->MoveTo(LEFT_WIDTH + cur_x, start_x);
+		dc->LineTo(LEFT_WIDTH + cur_x, end_y);
+
+		 if(i < prn_col)
+		 {
+			dc->MoveTo(LEFT_WIDTH + cur_x+nr_Size.cx, start_x);
+			dc->LineTo(LEFT_WIDTH + cur_x+nr_Size.cx, end_y);
+
+			dc->MoveTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx, start_x);
+			dc->LineTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx, end_y);
+		
+		
+			dc->MoveTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx+ close_temp_Size.cx, start_x);
+			dc->LineTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx+ close_temp_Size.cx, end_y);
+		}
+		
+	}
+	
+	
+//	cur_y += (int)(chnSize.cy *1.0);
+
+	double open_avr_temp,close_avr_temp;
+	int total_product = 0,total_main_level = 0;
+
+	TongJi(&open_max_temp, &open_min_temp, &open_avr_temp, &close_max_temp, &close_min_temp, &close_avr_temp, &total_product, &total_main_level,
+		ConfigPara,TestResult,bTestCloseLevel,HeatBoxType,BoxNr,CurGroupNr);
+	
+	table_start_y = cur_y;
+	
+	cur_x = chnSize.cx ;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("产品数"));
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	str.Format(_T("%d"),total_product);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("合格品"));
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	str.Format(_T("%d"),total_main_level);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("合格率"));
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	if(total_product > 0)
+	{
+		str.Format(_T("%5.1f%%"),(float)(total_main_level*100.0f/total_product));
+	}
+	else
+	{
+		str = _T("   0.0%");
+	}
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("动作最高温"));
+	
+	cur_x += (page_rect.right - LEFT_WIDTH * 2)/6;
+	if(total_product > 0)
+	{
+		str.Format(_T("%5.1f"),open_max_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("动作最低温"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	if(total_product > 0  && open_min_temp < 400)
+	{
+		str.Format(_T("%5.1f"),open_min_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("动作平均温"));
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	if(total_product > 0)
+	{
+		str.Format(_T("%5.1f"),open_avr_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位最高温"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	if(total_product > 0)
+	{
+		str.Format(_T("%5.1f"),close_max_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位最低温"));
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	if(total_product > 0 && close_min_temp < 400)
+	{
+		str.Format(_T("%5.1f"),close_min_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位平均温"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2)/6;
+	if(total_product > 0)
+	{
+		str.Format(_T("%5.1f"),close_avr_temp);
+	}
+	else
+	{
+		str = _T(" 0.0");
+	}
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+	cur_y += (int)(chnSize.cy);
+
+	//CPen pen2(PS_SOLID,chnSize.cy / 8,RGB(0x00,0x00,0x00));
+	//oldPen = dc->SelectObject(&pen2);
+	//oldPen->DeleteObject();
+
+	for(i = 0; i <= 7; i++)
+	{
+		cur_x = i*(page_rect.right  - LEFT_WIDTH * 2)/ 6;
+		int start_y = table_start_y;
+		dc->MoveTo(LEFT_WIDTH + cur_x, start_y);
+		dc->LineTo(LEFT_WIDTH + cur_x, cur_y);
+	}
+
+	for(i = 0; i <= 3; i++)
+	{
+		int start_y = table_start_y + i * chnSize.cy ;
+		//int end_y = cur_y;
+		dc->MoveTo(LEFT_WIDTH, start_y);
+		dc->LineTo(page_rect.right - LEFT_WIDTH, start_y);
+	}
+
+	
+	cur_y += (int)(chnSize.cy / 2);
+	table_start_y = cur_y;
+
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("主规格温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.MainLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("主规负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.MainLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("主规正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.MainLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+//
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+//
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("高规格温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.HighLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("高规负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.HighLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("高规正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.HighLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseHighLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseHighLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseHighLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	//
+		cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("低规格温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.LowLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("低规负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.LowLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("低规正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.LowLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLowLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseLowLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLowLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+//	CPen pen3(PS_SOLID,chnSize.cy / 8,RGB(0x00,0x00,0x00));
+//	oldPen = dc->SelectObject(&pen3);
+//	oldPen->DeleteObject();
+
+	for(i = 0; i <= 7; i++)
+	{
+		cur_x = i*(page_rect.right - LEFT_WIDTH *2) / 6;
+		int start_y = table_start_y;
+		dc->MoveTo(LEFT_WIDTH + cur_x, start_y);
+		dc->LineTo(LEFT_WIDTH + cur_x, cur_y);
+	}
+	for(i = 0; i <= 6; i++)
+	{
+		int start_y = table_start_y + i * chnSize.cy ;
+		//int end_y = cur_y;
+		dc->MoveTo(LEFT_WIDTH, start_y);
+		dc->LineTo(page_rect.right - LEFT_WIDTH , start_y);
+	}
+
+	
+	
+	//dc->TextOut(page_rect.right/2,page_rect.bottom - chnSize.cy, "制表： 常州市润邦电子科技有限公司 TEL:018052531601,013915838598");
+
+}
+
+void PrintReport_ByGroup(CDC *dc,CString Title ,int BoxNr, CTime BeginTime,CTime EndTime,
+				 CString TestParaName,CString ProduceType,CString TestMemo,SWITCH_CONFIG_PARA ConfigPara,SWITCH_TEST_RESULT_EX* TestResult,BOOL bTestCloseLevel,int start_switch_nr,int end_switch_nr,HEAT_BOX_TYPE HeatBoxType)
+{
+
+	Title = _T("热保护器测试报告");
+//#define MAX_LED_NR_128	
+	CFont *font=dc->GetCurrentFont();  
+	LOGFONT logfont; 
+	font->GetLogFont(&logfont); 
+#define LEFT_WIDTH	100
+	CRect page_rect;
+	CString str;
+	
+	page_rect.left = 0;
+	page_rect.right = dc->GetDeviceCaps(HORZRES);
+	page_rect.top = 0; 
+	page_rect.bottom = dc->GetDeviceCaps(VERTRES);   
+
+	page_rect.bottom = page_rect.right * 7008 / 4950 ;//A4
+
+	
+	CBrush whitebrush(COLORREF(RGB(255,255,255)));
+	dc->FillRect(page_rect,&whitebrush);
+
+	int FontPoint = page_rect.right / 2;
+
+	
+	CFont newFont;
+	CFont* oldFont;
+	CSize chnSize;
+	while(1)
+	{
+		newFont.CreatePointFont(FontPoint,_T("宋体"),dc);
+		oldFont = dc->SelectObject(&newFont);
+		chnSize = dc->GetTextExtent(_T("编号 动作温 复位温 判定结果 "));
+		if((page_rect.right - LEFT_WIDTH *2) >= (4 *  chnSize.cx))
+		{
+			break;
+		}
+		FontPoint -= 20;
+		newFont.DeleteObject();
+		dc->SelectObject(oldFont);
+	}
+	oldFont->DeleteObject();
+	
+	CPen pen(PS_SOLID,chnSize.cy / 8,RGB(0x00,0x00,0x00));
+	CPen *oldPen = dc->SelectObject(&pen);
+	oldPen->DeleteObject();
+	
+	chnSize = dc->GetTextExtent(_T("国"));
+	
+	chnSize.cy  = chnSize.cy *1.5;
+	int cur_x,cur_y;
+	cur_x = page_rect.right/3;
+	cur_y = chnSize.cy;
+
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, Title);
+	
+	G_sCompany = AfxGetApp()->GetProfileStringW(_T("SETTING"),_T("USER"),_T("常州市润邦电子科技有限公司")) ;
+
+	CString sCompany = _T("公司名称:");
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	
+	sCompany += G_sCompany;
+
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, sCompany);
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	
+
+	CString sVal;
+	//产品规格
+	sVal = _T("产品规格:") + TestParaName; 
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, sVal);
+	//产品类型
+	sVal = _T("产品类型:")+ProduceType;
+	dc->TextOut(LEFT_WIDTH + cur_x+chnSize.cx * 16,cur_y,sVal);
+	
+	sVal = _T("测试说明:")+TestMemo;
+	dc->TextOut(LEFT_WIDTH + cur_x+chnSize.cx * 32,cur_y,sVal);
+
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	str.Format(_T("烘箱编号: %d"), BoxNr + 1); 
+	str += _T("  开始测试时间: ");
+	sVal.Format(_T("%04d-%02d-%02d %02d:%02d"),BeginTime.GetYear(),BeginTime.GetMonth(),BeginTime.GetDay(),BeginTime.GetHour(),BeginTime.GetMinute());
+	str += sVal;
+	str += _T("   结束测试时间: ");
+	sVal.Format(_T("%04d-%02d-%02d %02d:%02d"),EndTime.GetYear(),EndTime.GetMonth(),EndTime.GetDay(),EndTime.GetHour(),EndTime.GetMinute()); 
+	str += sVal;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+	int count = 0;
+
+	for(int i=0; i < G_iMaxLedNr / 8 ; i++)
+	{
+		count = 0;
+		for(int j = 0;j < 8; j++)
+		{
+			if(TestResult[i* 8 + j].result.IsCloseFlash)
+			{
+				count ++;
+			}
+		}
+		if( count >= 4)
+		{
+			for(int j = 0;j < 8; j++)
+			{
+				TestResult[i* 8 + j].result.IsCloseFlash = false;
+			}
+		}
+
+		count = 0;
+		for(int j = 0;j < 8; j++)
+		{
+			if(TestResult[i* 8 + j].result.IsOpenFlash)
+			{
+				count ++;
+			}
+		}
+		if( count >= 4)
+		{
+			for(int j = 0;j < 8; j++)
+			{
+				TestResult[i* 8 + j].result.IsOpenFlash = false;
+			}
+		}
+	}
+
+	int table_start_y;
+	for(int CurGroupNr = 0; CurGroupNr <= 10; CurGroupNr++)
+	{
+		int GroupSwitchs = 0;
+		for(int switch_nr = 0; switch_nr < ::G_iMaxLedNr ; switch_nr++)
+		{
+			if(TestResult[switch_nr].result.Group !=  CurGroupNr)
+			{
+				continue;
+			}
+			GroupSwitchs ++;
+		}
+
+		if(GroupSwitchs == 0 )
+		{
+			continue;
+		}
+
+		CSize nr_Size = dc->GetTextExtent(_T("编号 "));
+		CSize open_temp_Size = dc->GetTextExtent(_T("动作温 "));
+		CSize close_temp_Size = dc->GetTextExtent(_T("复位温 "));
+		CSize level_Size = dc->GetTextExtent(_T("判定结果 "));
+
+		cur_x = 0;
+		cur_y += (int)(chnSize.cy);
+		str = _T("编号 动作温 复位温 判定结果 ");
+		CSize title_Size = dc->GetTextExtent(str);
+		int prn_col = (page_rect.right - LEFT_WIDTH *2)/ title_Size.cx;
+		int i;
+
+		for(i = 0; i < prn_col; i++)
+		{
+			dc->TextOut(LEFT_WIDTH+cur_x,cur_y + chnSize.cy* 0.3, str);
+			cur_x += (page_rect.right - LEFT_WIDTH *2) / prn_col;
+		}
+
+		table_start_y = cur_y;
+
+		cur_y += (int)(chnSize.cy *1.5);
+		
+
+		int prn_row = (int)((page_rect.bottom - cur_y) / (chnSize.cy *1.0));
+
+		if(prn_row > (128 / prn_col))
+		{
+			prn_row = (128 / prn_col);
+		}
+
+		double open_max_temp = 0.0f;
+		double open_min_temp = 999.0f;
+		double close_max_temp = 0.0f;
+		double close_min_temp = 999.0f;
+		double max_open_temp_level;
+		double min_open_temp_level;
+		double max_close_temp_level;
+		double min_close_temp_level;
+		
+		
+		max_open_temp_level = ConfigPara.HighLevel+ConfigPara.HighLevelSpanPlus;
+		min_open_temp_level = ConfigPara.LowLevel -ConfigPara.LowLevelSpanMinus; 
+
+		max_close_temp_level = ConfigPara.CloseLevel+ConfigPara.CloseLevelSpanPlus;
+		min_close_temp_level = ConfigPara.CloseLevel-ConfigPara.CloseLevelSpanMinus; 
+
+		int   main_level = 0,total_switch = 0;
+
+		table_start_y = cur_y - (int)(chnSize.cy *1.5);
+
+		int GroupSwitchID = 0;
+		for(int switch_nr = 0; switch_nr < ::G_iMaxLedNr ; switch_nr++)
+		{
+			if(TestResult[switch_nr].result.Group !=  CurGroupNr)
+			{
+				continue;
+			}
+			
+			cur_x =( GroupSwitchID % prn_col) * (page_rect.right - LEFT_WIDTH *2)/ prn_col;
+			
+				
+			str.Format(_T("%3d"),TestResult[switch_nr].ID+1); 
+			
+
+			dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+			cur_x += nr_Size.cx;
+			switch(AfxGetApp()->GetProfileIntW(_T("SETTING"),_T("PRINT TYPE"),0))
+			{
+			case 1:
+				switch(CheckTestLevel(ConfigPara,TestResult[switch_nr].result))
+				{
+				case MAIN_LEVEL:
+				case HIGH_LEVEL:
+				case LOW_LEVEL:
+					break;
+			
+				default:
+					continue						;
+				}
+				break;
+			case 2:
+				switch(CheckTestLevel(ConfigPara,TestResult[switch_nr].result))
+				{
+				case MAIN_LEVEL:
+					break;
+				default:
+					continue						;
+				}
+				break;
+			
+			default:
+				
+				break;
+			}
+			double open_temp = TestResult[switch_nr].result.OpenTemp;
+			str.Format(_T("%5.1f"),open_temp);
+			if(open_temp <= 0.0f || open_temp >= 300.0f)
+			{
+				str = "-";
+			}
+			else if(open_temp > max_open_temp_level || open_temp < min_open_temp_level)
+			{
+				str +="X";
+			}
+			
+			if(TestResult[switch_nr].result.IsOpenFlash)
+			{
+				if(TestResult[switch_nr].result.IsUsed)
+				{
+					str += "V";
+				}
+			}
+			if(CurGroupNr == 0 ||  ::G_NormalConfigPara.Group[BoxNr][switch_nr] == CurGroupNr)
+			{
+				dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+			}
+			cur_x += open_temp_Size.cx;
+			
+			
+			double close_temp = TestResult[switch_nr].result.CloseTemp;;
+			str.Format(_T("%5.1f"),close_temp);
+			if(close_temp <= 0.0f || close_temp >= 300.0f)
+			{
+				str = _T("");
+			}
+			else if(close_temp > max_close_temp_level || close_temp < min_close_temp_level)
+			{
+				str +=_T("X");
+			}
+
+			if(TestResult[switch_nr].result.IsCloseFlash)
+			{
+				if(TestResult[switch_nr].result.IsUsed) 
+					str += _T("V");
+			}
+			
+			dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+			
+			cur_x += close_temp_Size.cx;
+			
+			switch(CheckTestLevel(ConfigPara,TestResult[switch_nr].result))
+			{
+			case MAIN_LEVEL:
+				main_level ++;
+				str =_T( "");//"主规格";
+				break;
+			case OVER_HIGH_LEVEL:
+				str = _T("高温品");
+				break;
+			case OVER_LOW_LEVEL:
+				str = _T("低温品");
+				break;
+			case HIGH_LEVEL:
+				str =_T("高规格G");
+				break;
+			case LOW_LEVEL:
+				str =_T("低规格D");
+				break;
+			case CLOSE_LOW_LEVEL:
+				str = _T("复大品X");
+				break;
+			case CLOSE_HIGH_LEVEL:
+				str = _T("复小品X");
+				break;
+			case OPEN_FLASH_LEVEL:
+				str = _T("动闪V");
+				break;
+			case CLOSE_FLASH_LEVEL:
+				str = _T("复闪V");
+				break;
+			case OPEN_DOOR_RESET_LEVEL:
+				str = _T("开门复位X");
+				break;
+			case NOT_USED:
+				str = _T("无产品");
+				break;
+			default:
+				str = _T("高低复大小");
+				break;
+			}
+			dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+			
+			cur_x += level_Size.cx;
+			str = "";
+
+			if(NOT_USED == CheckTestLevel(ConfigPara,TestResult[switch_nr].result))
+			{}
+			else
+			{
+				total_switch ++;
+				if(open_temp > 0)
+				{
+					if(open_temp > open_max_temp)
+					{
+						open_max_temp = open_temp;
+					}
+					if(open_temp < open_min_temp)
+					{
+						open_min_temp = open_temp;
+					}
+				}
+				if(close_temp > 0)
+				{
+					if(close_temp > close_max_temp)
+					{
+						close_max_temp = close_temp;
+					}
+					if(close_temp < close_min_temp)
+					{
+						close_min_temp = close_temp;
+					}
+				}
+			}
+			GroupSwitchID++;
+			if((GroupSwitchID % prn_col) ==0)
+			{
+				cur_y += (int)(chnSize.cy);
+			}
+		}
+		
+		//一组每一个产品打印结束
+
+		if(GroupSwitchs == 0)
+		{
+			continue;
+		}
+		
+		for(i = 0; i <= (int)((GroupSwitchs + 3)  / prn_col)  + 1; i++)
+		{
+			dc->MoveTo(LEFT_WIDTH,table_start_y + i * chnSize.cy + chnSize.cy* 0.3);
+			dc->LineTo(page_rect.right - LEFT_WIDTH ,table_start_y + i * chnSize.cy + chnSize.cy*0.3); 
+		}
+
+	
+		for(i = 0; i <= prn_col; i++)
+		{
+			cur_x = i*(page_rect.right - LEFT_WIDTH * 2) / prn_col;
+			int start_x = table_start_y + chnSize.cy* 0.3;
+			int end_y = table_start_y + ((int)((GroupSwitchs + 3)  / prn_col)  + 1) * chnSize.cy + chnSize.cy*0.3;
+			dc->MoveTo(LEFT_WIDTH + cur_x, start_x);
+			dc->LineTo(LEFT_WIDTH + cur_x, end_y);
+
+			 if(i < prn_col)
+			 {
+				dc->MoveTo(LEFT_WIDTH + cur_x+nr_Size.cx, start_x);
+				dc->LineTo(LEFT_WIDTH + cur_x+nr_Size.cx, end_y);
+
+				dc->MoveTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx, start_x);
+				dc->LineTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx, end_y);
+			
+			
+				dc->MoveTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx+ close_temp_Size.cx, start_x);
+				dc->LineTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx+ close_temp_Size.cx, end_y);
+			}
+			
+		}
+		
+		
+		double open_avr_temp,close_avr_temp;
+		int total_product = 0,total_main_level = 0;
+
+		TongJi(&open_max_temp, &open_min_temp, &open_avr_temp, &close_max_temp, &close_min_temp, &close_avr_temp, &total_product, &total_main_level,
+			ConfigPara,TestResult,bTestCloseLevel,HeatBoxType,BoxNr,CurGroupNr);
+		
+		cur_y += (int)(chnSize.cy);
+		table_start_y = cur_y ;
+		
+		cur_x = chnSize.cx ;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("产品数"));
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		str.Format(_T("%d(%d)"),total_product,GroupSwitchs);
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("合格品"));
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		str.Format(_T("%d"),total_main_level);
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("合格率"));
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		if(total_product > 0)
+		{
+			str.Format(_T("%5.1f%%"),(float)(total_main_level*100.0f/total_product));
+		}
+		else
+		{
+			str = _T("   0.0%");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+		
+		cur_y += (int)(chnSize.cy);
+
+		cur_x = chnSize.cx;
+	
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("动作最高温"));
+	
+		cur_x += (page_rect.right - LEFT_WIDTH * 2)/6;
+		if(total_product > 0)
+		{
+			str.Format(_T("%5.1f"),open_max_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("动作最低温"));
+		cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+		if(total_product > 0  && open_min_temp < 400)
+		{
+			str.Format(_T("%5.1f"),open_min_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("动作平均温"));
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		if(total_product > 0)
+		{
+			str.Format(_T("%5.1f"),open_avr_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+
+		cur_y += (int)(chnSize.cy);
+		cur_x = chnSize.cx;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位最高温"));
+		cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+		if(total_product > 0)
+		{
+			str.Format(_T("%5.1f"),close_max_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位最低温"));
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		if(total_product > 0 && close_min_temp < 400)
+		{
+			str.Format(_T("%5.1f"),close_min_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位平均温"));
+		cur_x += (page_rect.right - LEFT_WIDTH * 2)/6;
+		if(total_product > 0)
+		{
+			str.Format(_T("%5.1f"),close_avr_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_y += (int)(chnSize.cy);
+		for(i = 0; i <= 7; i++)
+		{
+			cur_x = i*(page_rect.right  - LEFT_WIDTH * 2)/ 6;
+			int start_y = table_start_y;
+			dc->MoveTo(LEFT_WIDTH + cur_x, start_y);
+			dc->LineTo(LEFT_WIDTH + cur_x, cur_y);
+		}
+
+		for(i = 0; i <= 3; i++)
+		{
+			int start_y = table_start_y + i * chnSize.cy ;
+			//int end_y = cur_y;
+			dc->MoveTo(LEFT_WIDTH, start_y);
+			dc->LineTo(page_rect.right - LEFT_WIDTH, start_y);
+		}
+
+	//	cur_y += (int)(chnSize.cy) * 5;
+
+		//统计结束
+	}
+	
+	cur_y += (int)(chnSize.cy / 2);
+	table_start_y = cur_y;
+
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("主规格温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.MainLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("主规负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.MainLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("主规正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.MainLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+//
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+//
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("高规格温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.HighLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("高规负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.HighLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("高规正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.HighLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseHighLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseHighLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseHighLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	//
+		cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("低规格温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.LowLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("低规负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.LowLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("低规正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.LowLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLowLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseLowLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLowLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+//	CPen pen3(PS_SOLID,chnSize.cy / 8,RGB(0x00,0x00,0x00));
+//	oldPen = dc->SelectObject(&pen3);
+//	oldPen->DeleteObject();
+
+	for(int i = 0; i <= 7; i++)
+	{
+		cur_x = i*(page_rect.right - LEFT_WIDTH *2) / 6;
+		int start_y = table_start_y;
+		dc->MoveTo(LEFT_WIDTH + cur_x, start_y);
+		dc->LineTo(LEFT_WIDTH + cur_x, cur_y);
+	}
+	for(int i = 0; i <= 6; i++)
+	{
+		int start_y = table_start_y + i * chnSize.cy ;
+		//int end_y = cur_y;
+		dc->MoveTo(LEFT_WIDTH, start_y);
+		dc->LineTo(page_rect.right - LEFT_WIDTH , start_y);
+	}
+
+	
+	
+	//dc->TextOut(page_rect.right/2,page_rect.bottom - chnSize.cy, "制表： 常州市润邦电子科技有限公司 TEL:018052531601,013915838598");
+
+}
+
+void PrintReport_ByGroup_2(CDC *dc,CString Title ,int BoxNr, CTime BeginTime,CTime EndTime,
+				 CString TestParaName,CString ProduceType,CString TestMemo,SWITCH_CONFIG_PARA ConfigPara,SWITCH_TEST_RESULT_EX* TestResult,BOOL bTestCloseLevel,int start_switch_nr,int end_switch_nr,HEAT_BOX_TYPE HeatBoxType)
+{
+
+	Title = _T("热保护器测试报告");
+//#define MAX_LED_NR_128	
+	CFont *font=dc->GetCurrentFont();  
+	LOGFONT logfont; 
+	font->GetLogFont(&logfont); 
+#define LEFT_WIDTH	100
+	CRect page_rect;
+	CString str;
+	
+	page_rect.left = 0;
+	page_rect.right = dc->GetDeviceCaps(HORZRES);
+	page_rect.top = 0; 
+	page_rect.bottom = dc->GetDeviceCaps(VERTRES);   
+
+	page_rect.bottom = page_rect.right * 7008 / 4950 ;//A4
+
+	
+	CBrush whitebrush(COLORREF(RGB(255,255,255)));
+	dc->FillRect(page_rect,&whitebrush);
+
+	int FontPoint = page_rect.right / 2;
+
+	
+	CFont newFont;
+	CFont* oldFont;
+	CSize chnSize;
+	while(1)
+	{
+		newFont.CreatePointFont(FontPoint,_T("宋体"),dc);
+		oldFont = dc->SelectObject(&newFont);
+		chnSize = dc->GetTextExtent(_T("编号 动作温 复位温 判定结果 "));
+		if((page_rect.right - LEFT_WIDTH *2) >= (4 *  chnSize.cx))
+		{
+			break;
+		}
+		FontPoint -= 20;
+		newFont.DeleteObject();
+		dc->SelectObject(oldFont);
+	}
+	oldFont->DeleteObject();
+	
+	CPen pen(PS_SOLID,chnSize.cy / 8,RGB(0x00,0x00,0x00));
+	CPen *oldPen = dc->SelectObject(&pen);
+	oldPen->DeleteObject();
+	
+	chnSize = dc->GetTextExtent(_T("国"));
+	
+	chnSize.cy  = chnSize.cy *1.5;
+	int cur_x,cur_y;
+	cur_x = page_rect.right/3;
+	cur_y = chnSize.cy;
+
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, Title);
+	
+	G_sCompany = AfxGetApp()->GetProfileStringW(_T("SETTING"),_T("USER"),_T("常州市润邦电子科技有限公司")) ;
+
+	CString sCompany = _T("公司名称:");
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	
+	sCompany += G_sCompany;
+
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, sCompany);
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	
+
+	CString sVal;
+	//产品规格
+	sVal = _T("产品规格:") + TestParaName; 
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, sVal);
+	//产品类型
+	sVal = _T("产品类型:")+ProduceType;
+	dc->TextOut(LEFT_WIDTH + cur_x+chnSize.cx * 16,cur_y,sVal);
+	
+	sVal = _T("测试说明:")+TestMemo;
+	dc->TextOut(LEFT_WIDTH + cur_x+chnSize.cx * 32,cur_y,sVal);
+
+	cur_x = 0;
+	cur_y += (int)(chnSize.cy *1.5);
+	str.Format(_T("烘箱编号: %d"), BoxNr + 1); 
+	str += _T("  开始测试时间: ");
+	sVal.Format(_T("%04d-%02d-%02d %02d:%02d"),BeginTime.GetYear(),BeginTime.GetMonth(),BeginTime.GetDay(),BeginTime.GetHour(),BeginTime.GetMinute());
+	str += sVal;
+	str += _T("   结束测试时间: ");
+	sVal.Format(_T("%04d-%02d-%02d %02d:%02d"),EndTime.GetYear(),EndTime.GetMonth(),EndTime.GetDay(),EndTime.GetHour(),EndTime.GetMinute()); 
+	str += sVal;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+	int count = 0;
+
+	for(int i=0; i < G_iMaxLedNr / 8 ; i++)
+	{
+		count = 0;
+		for(int j = 0;j < 8; j++)
+		{
+			if(TestResult[i* 8 + j].result.IsCloseFlash)
+			{
+				count ++;
+			}
+		}
+		if( count >= 4)
+		{
+			for(int j = 0;j < 8; j++)
+			{
+				TestResult[i* 8 + j].result.IsCloseFlash = false;
+			}
+		}
+
+		count = 0;
+		for(int j = 0;j < 8; j++)
+		{
+			if(TestResult[i* 8 + j].result.IsOpenFlash)
+			{
+				count ++;
+			}
+		}
+		if( count >= 4)
+		{
+			for(int j = 0;j < 8; j++)
+			{
+				TestResult[i* 8 + j].result.IsOpenFlash = false;
+			}
+		}
+	}
+
+	int table_start_y;
+	for(int CurGroupNr = 0; CurGroupNr <= 10; CurGroupNr++)
+	{
+		int GroupSwitchs = 0;
+		for(int switch_nr = 0; switch_nr < ::G_iMaxLedNr ; switch_nr++)
+		{
+			if(TestResult[switch_nr].result.Group !=  CurGroupNr)
+			{
+				continue;
+			}
+			GroupSwitchs ++;
+		}
+
+		if(GroupSwitchs == 0 )
+		{
+			continue;
+		}
+
+		CSize nr_Size = dc->GetTextExtent(_T("编号 "));
+		CSize open_temp_Size = dc->GetTextExtent(_T("动作温 "));
+		CSize close_temp_Size = dc->GetTextExtent(_T("复位温 "));
+		CSize level_Size = dc->GetTextExtent(_T("判定结果 "));
+
+		cur_x = 0;
+		cur_y += (int)(chnSize.cy);
+		str = _T("编号 动作温 复位温 判定结果 ");
+		CSize title_Size = dc->GetTextExtent(str);
+		int prn_col = (page_rect.right - LEFT_WIDTH *2)/ title_Size.cx;
+		int i;
+
+		for(i = 0; i < prn_col; i++)
+		{
+			dc->TextOut(LEFT_WIDTH+cur_x,cur_y + chnSize.cy* 0.3, str);
+			cur_x += (page_rect.right - LEFT_WIDTH *2) / prn_col;
+		}
+
+		table_start_y = cur_y;
+
+		cur_y += (int)(chnSize.cy *1.5);
+		
+
+		int prn_row = (int)((page_rect.bottom - cur_y) / (chnSize.cy *1.0));
+
+		if(prn_row > (128 / prn_col))
+		{
+			prn_row = (128 / prn_col);
+		}
+
+		double open_max_temp = 0.0f;
+		double open_min_temp = 999.0f;
+		double close_max_temp = 0.0f;
+		double close_min_temp = 999.0f;
+		double max_open_temp_level;
+		double min_open_temp_level;
+		double max_close_temp_level;
+		double min_close_temp_level;
+		
+		
+		max_open_temp_level = ConfigPara.HighLevel+ConfigPara.HighLevelSpanPlus;
+		min_open_temp_level = ConfigPara.LowLevel -ConfigPara.LowLevelSpanMinus; 
+
+		max_close_temp_level = ConfigPara.CloseLevel+ConfigPara.CloseLevelSpanPlus;
+		min_close_temp_level = ConfigPara.CloseLevel-ConfigPara.CloseLevelSpanMinus; 
+
+		int   main_level = 0,total_switch = 0;
+
+		table_start_y = cur_y - (int)(chnSize.cy *1.5);
+
+		int GroupSwitchID = 0;
+		for(int switch_nr = 0; switch_nr < ::G_iMaxLedNr ; switch_nr++)
+		{
+			if(TestResult[switch_nr].result.Group !=  CurGroupNr)
+			{
+				continue;
+			}
+			
+			cur_x =( GroupSwitchID % prn_col) * (page_rect.right - LEFT_WIDTH *2)/ prn_col;
+			
+				
+			str.Format(_T("%3d"),TestResult[switch_nr].ID+1); 
+			
+
+			dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+			cur_x += nr_Size.cx;
+			switch(AfxGetApp()->GetProfileIntW(_T("SETTING"),_T("PRINT TYPE"),0))
+			{
+			case 1:
+				switch(CheckTestLevel(ConfigPara,TestResult[switch_nr].result))
+				{
+				case MAIN_LEVEL:
+				case HIGH_LEVEL:
+				case LOW_LEVEL:
+					break;
+			
+				default:
+					continue						;
+				}
+				break;
+			case 2:
+				switch(CheckTestLevel(ConfigPara,TestResult[switch_nr].result))
+				{
+				case MAIN_LEVEL:
+					break;
+				default:
+					continue						;
+				}
+				break;
+			
+			default:
+				
+				break;
+			}
+			double open_temp = TestResult[switch_nr].result.OpenTemp;
+			str.Format(_T("%5.1f"),open_temp);
+			if(open_temp <= 0.0f || open_temp >= 300.0f)
+			{
+				str = "-";
+			}
+			else if(open_temp > max_open_temp_level || open_temp < min_open_temp_level)
+			{
+				str +="X";
+			}
+			
+			if(TestResult[switch_nr].result.IsOpenFlash)
+			{
+				if(TestResult[switch_nr].result.IsUsed)
+				{
+					str += "V";
+				}
+			}
+			if(CurGroupNr == 0 ||  ::G_NormalConfigPara.Group[BoxNr][switch_nr] == CurGroupNr)
+			{
+				dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+			}
+			cur_x += open_temp_Size.cx;
+			
+			
+			double close_temp = TestResult[switch_nr].result.CloseTemp;;
+			str.Format(_T("%5.1f"),close_temp);
+			if(close_temp <= 0.0f || close_temp >= 300.0f)
+			{
+				str = _T("");
+			}
+			else if(close_temp > max_close_temp_level || close_temp < min_close_temp_level)
+			{
+				str +=_T("X");
+			}
+
+			if(TestResult[switch_nr].result.IsCloseFlash)
+			{
+				if(TestResult[switch_nr].result.IsUsed) 
+					str += _T("V");
+			}
+			
+			dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+			
+			cur_x += close_temp_Size.cx;
+			
+			switch(CheckTestLevel(ConfigPara,TestResult[switch_nr].result))
+			{
+			case MAIN_LEVEL:
+				main_level ++;
+				str =_T( "");//"主规格";
+				break;
+			case OVER_HIGH_LEVEL:
+				str = _T("高温品");
+				break;
+			case OVER_LOW_LEVEL:
+				str = _T("低温品");
+				break;
+			case HIGH_LEVEL:
+				str =_T("高规格G");
+				break;
+			case LOW_LEVEL:
+				str =_T("低规格D");
+				break;
+			case CLOSE_LOW_LEVEL:
+				str = _T("复大品X");
+				break;
+			case CLOSE_HIGH_LEVEL:
+				str = _T("复小品X");
+				break;
+			case OPEN_FLASH_LEVEL:
+				str = _T("动闪V");
+				break;
+			case CLOSE_FLASH_LEVEL:
+				str = _T("复闪V");
+				break;
+			case OPEN_DOOR_RESET_LEVEL:
+				str = _T("开门复位X");
+				break;
+			case NOT_USED:
+				str = _T("无产品");
+				break;
+			default:
+				str = _T("高低复大小");
+				break;
+			}
+			dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+			
+			cur_x += level_Size.cx;
+			str = "";
+
+			if(NOT_USED == CheckTestLevel(ConfigPara,TestResult[switch_nr].result))
+			{}
+			else
+			{
+				total_switch ++;
+				if(open_temp > 0)
+				{
+					if(open_temp > open_max_temp)
+					{
+						open_max_temp = open_temp;
+					}
+					if(open_temp < open_min_temp)
+					{
+						open_min_temp = open_temp;
+					}
+				}
+				if(close_temp > 0)
+				{
+					if(close_temp > close_max_temp)
+					{
+						close_max_temp = close_temp;
+					}
+					if(close_temp < close_min_temp)
+					{
+						close_min_temp = close_temp;
+					}
+				}
+			}
+			GroupSwitchID++;
+			if((GroupSwitchID % prn_col) ==0)
+			{
+				cur_y += (int)(chnSize.cy);
+			}
+		}
+		
+		//一组每一个产品打印结束
+
+		if(GroupSwitchs == 0)
+		{
+			continue;
+		}
+		
+		for(i = 0; i <= (int)((GroupSwitchs + 3)  / prn_col)  + 1; i++)
+		{
+			dc->MoveTo(LEFT_WIDTH,table_start_y + i * chnSize.cy + chnSize.cy* 0.3);
+			dc->LineTo(page_rect.right - LEFT_WIDTH ,table_start_y + i * chnSize.cy + chnSize.cy*0.3); 
+		}
+
+	
+		for(i = 0; i <= prn_col; i++)
+		{
+			cur_x = i*(page_rect.right - LEFT_WIDTH * 2) / prn_col;
+			int start_x = table_start_y + chnSize.cy* 0.3;
+			int end_y = table_start_y + ((int)((GroupSwitchs + 3)  / prn_col)  + 1) * chnSize.cy + chnSize.cy*0.3;
+			dc->MoveTo(LEFT_WIDTH + cur_x, start_x);
+			dc->LineTo(LEFT_WIDTH + cur_x, end_y);
+
+			 if(i < prn_col)
+			 {
+				dc->MoveTo(LEFT_WIDTH + cur_x+nr_Size.cx, start_x);
+				dc->LineTo(LEFT_WIDTH + cur_x+nr_Size.cx, end_y);
+
+				dc->MoveTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx, start_x);
+				dc->LineTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx, end_y);
+			
+			
+				dc->MoveTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx+ close_temp_Size.cx, start_x);
+				dc->LineTo(LEFT_WIDTH + cur_x+nr_Size.cx+ open_temp_Size.cx+ close_temp_Size.cx, end_y);
+			}
+			
+		}
+		
+		
+		double open_avr_temp,close_avr_temp;
+		int total_product = 0,total_main_level = 0;
+
+		TongJi(&open_max_temp, &open_min_temp, &open_avr_temp, &close_max_temp, &close_min_temp, &close_avr_temp, &total_product, &total_main_level,
+			ConfigPara,TestResult,bTestCloseLevel,HeatBoxType,BoxNr,CurGroupNr);
+		
+		cur_y += (int)(chnSize.cy);
+		table_start_y = cur_y ;
+		
+		cur_x = chnSize.cx ;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("产品数"));
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		str.Format(_T("%d(%d)"),total_product,GroupSwitchs);
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("合格品"));
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		str.Format(_T("%d"),total_main_level);
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("合格率"));
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		if(total_product > 0)
+		{
+			str.Format(_T("%5.1f%%"),(float)(total_main_level*100.0f/total_product));
+		}
+		else
+		{
+			str = _T("   0.0%");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+		
+		cur_y += (int)(chnSize.cy);
+
+		cur_x = chnSize.cx;
+	
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("动作最高温"));
+	
+		cur_x += (page_rect.right - LEFT_WIDTH * 2)/6;
+		if(total_product > 0)
+		{
+			str.Format(_T("%5.1f"),open_max_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("动作最低温"));
+		cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+		if(total_product > 0  && open_min_temp < 400)
+		{
+			str.Format(_T("%5.1f"),open_min_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("动作平均温"));
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		if(total_product > 0)
+		{
+			str.Format(_T("%5.1f"),open_avr_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+
+		cur_y += (int)(chnSize.cy);
+		cur_x = chnSize.cx;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位最高温"));
+		cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+		if(total_product > 0)
+		{
+			str.Format(_T("%5.1f"),close_max_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位最低温"));
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		if(total_product > 0 && close_min_temp < 400)
+		{
+			str.Format(_T("%5.1f"),close_min_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位平均温"));
+		cur_x += (page_rect.right - LEFT_WIDTH * 2)/6;
+		if(total_product > 0)
+		{
+			str.Format(_T("%5.1f"),close_avr_temp);
+		}
+		else
+		{
+			str = _T(" 0.0");
+		}
+		dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+
+		cur_y += (int)(chnSize.cy);
+		for(i = 0; i <= 7; i++)
+		{
+			cur_x = i*(page_rect.right  - LEFT_WIDTH * 2)/ 6;
+			int start_y = table_start_y;
+			dc->MoveTo(LEFT_WIDTH + cur_x, start_y);
+			dc->LineTo(LEFT_WIDTH + cur_x, cur_y);
+		}
+
+		for(i = 0; i <= 3; i++)
+		{
+			int start_y = table_start_y + i * chnSize.cy ;
+			//int end_y = cur_y;
+			dc->MoveTo(LEFT_WIDTH, start_y);
+			dc->LineTo(page_rect.right - LEFT_WIDTH, start_y);
+		}
+
+	//	cur_y += (int)(chnSize.cy) * 5;
+
+		//统计结束
+	}
+	
+	cur_y += (int)(chnSize.cy / 2);
+	table_start_y = cur_y;
+
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("主规格温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.MainLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("主规负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.MainLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("主规正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.MainLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+//
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+//
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("高规格温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.HighLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("高规负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.HighLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("高规正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.HighLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseHighLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseHighLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseHighLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	//
+		cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("低规格温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.LowLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("低规负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.LowLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("低规正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.LowLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+	cur_x = chnSize.cx;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位温度"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLowLevel);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位负偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),-ConfigPara.CloseLowLevelSpanMinus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_x += (page_rect.right - LEFT_WIDTH *2) /6;
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, _T("复位正偏差"));
+	cur_x += (page_rect.right - LEFT_WIDTH * 2) /6;
+	str.Format(_T("%5.1f"),ConfigPara.CloseLowLevelSpanPlus);
+	dc->TextOut(LEFT_WIDTH + cur_x,cur_y, str);
+	cur_y += (int)(chnSize.cy);
+
+//	CPen pen3(PS_SOLID,chnSize.cy / 8,RGB(0x00,0x00,0x00));
+//	oldPen = dc->SelectObject(&pen3);
+//	oldPen->DeleteObject();
+
+	for(int i = 0; i <= 7; i++)
+	{
+		cur_x = i*(page_rect.right - LEFT_WIDTH *2) / 6;
+		int start_y = table_start_y;
+		dc->MoveTo(LEFT_WIDTH + cur_x, start_y);
+		dc->LineTo(LEFT_WIDTH + cur_x, cur_y);
+	}
+	for(int i = 0; i <= 6; i++)
+	{
+		int start_y = table_start_y + i * chnSize.cy ;
+		//int end_y = cur_y;
+		dc->MoveTo(LEFT_WIDTH, start_y);
+		dc->LineTo(page_rect.right - LEFT_WIDTH , start_y);
+	}
+
+	
+	
+	//dc->TextOut(page_rect.right/2,page_rect.bottom - chnSize.cy, "制表： 常州市润邦电子科技有限公司 TEL:018052531601,013915838598");
+
+}
+
+
+
+CRecordViewDlg::CRecordViewDlg(CWnd* pParent /*=NULL*/)
+	: CDialog(CRecordViewDlg::IDD, pParent)
+{
+	m_BoxNr = 0;
+	//{{AFX_DATA_INIT(CRecordViewDlg)
+	m_Para = _T("");
+	//}}AFX_DATA_INIT
+
+}
+
+
+void CRecordViewDlg::DoDataExchange(CDataExchange* pDX)
+{
+	CDialog::DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CRecordViewDlg)
+	DDX_Control(pDX, IDC_LIST_RECORD, m_ListCtrlRecord);
+
+	DDX_Text(pDX, IDC_STATIC_PARA, m_Para);
+	//}}AFX_DATA_MAP
+	DDX_Control(pDX, IDC_COMBO_SORT_TYPE, m_ComboBoxSortType);
+	DDX_Control(pDX, IDC_COMBO_PRINT_TYPE, m_ComboPrintType);
+	DDX_Control(pDX, IDC_TREE1, m_DirTreeCtrl);
+}
+
+
+BEGIN_MESSAGE_MAP(CRecordViewDlg, CDialog)
+	//{{AFX_MSG_MAP(CRecordViewDlg)
+	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_BUTTON_PRN, OnButtonPrn)
+	ON_BN_CLICKED(IDC_BUTTON_TEMP_BAR, OnButtonTempBar)
+	ON_BN_CLICKED(IDC_BUTTON_PRN_PREVIEW, OnButtonPrnPreview)
+	ON_BN_CLICKED(IDC_BUTTON_TONGJI, OnButtonTongji)
+	ON_BN_CLICKED(IDC_BUTTON_SAVEAS, OnButtonSaveas)
+	//}}AFX_MSG_MAP
+	ON_BN_CLICKED(IDC_BUTTON_SAVEAS2, &CRecordViewDlg::OnBnClickedButtonSaveas2)
+	ON_BN_CLICKED(IDC_BUTTON_TAKEDLG, &CRecordViewDlg::OnBnClickedButtonTakedlg)
+	ON_CBN_SELCHANGE(IDC_COMBO_SORT_TYPE, &CRecordViewDlg::OnCbnSelchangeComboSortType)
+	ON_CBN_SELCHANGE(IDC_COMBO_PRINT_TYPE, &CRecordViewDlg::OnCbnSelchangeComboPrintType)
+	ON_BN_CLICKED(IDC_BUTTON_OPEN_TEMP_SHOW, &CRecordViewDlg::OnBnClickedButtonOpenTempShow)
+	ON_NOTIFY(NM_CLICK, IDC_TREE1, &CRecordViewDlg::OnNMClickTree1)
+	ON_NOTIFY(NM_DBLCLK, IDC_TREE1, &CRecordViewDlg::OnNMDblclkTree1)
+	ON_NOTIFY(TVN_SELCHANGED, IDC_TREE1, &CRecordViewDlg::OnTvnSelchangedTree1)
+	ON_BN_CLICKED(IDC_BUTTON_TEMP_CURVE, &CRecordViewDlg::OnBnClickedButtonTempCurve)
+END_MESSAGE_MAP()
+
+/////////////////////////////////////////////////////////////////////////////
+// CRecordViewDlg message handlers
+
+BOOL CRecordViewDlg::OnInitDialog() 
+{
+	CDialog::OnInitDialog();
+
+
+	CRect rect;
+
+	
+	
+	m_ListCtrlRecord.GetClientRect(&rect); 
+	m_ListCtrlRecord.SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
+	this->m_ListCtrlRecord.InsertColumn(0,_T("编号"),    LVCFMT_LEFT,50);  
+	this->m_ListCtrlRecord.InsertColumn(1,_T("有产品"),  LVCFMT_LEFT,70);  
+	this->m_ListCtrlRecord.InsertColumn(2,_T("动作"),	LVCFMT_LEFT,50);  
+	this->m_ListCtrlRecord.InsertColumn(3,_T("复位"),	LVCFMT_LEFT,50);  
+	this->m_ListCtrlRecord.InsertColumn(4,_T("动闪"),	LVCFMT_LEFT,50);  
+	this->m_ListCtrlRecord.InsertColumn(5,_T("复闪"),	LVCFMT_LEFT,50);  
+	this->m_ListCtrlRecord.InsertColumn(6,_T("动作温度"),LVCFMT_LEFT,80);  
+	this->m_ListCtrlRecord.InsertColumn(7,_T("复位温度"),LVCFMT_LEFT,80);  
+ 	this->m_ListCtrlRecord.InsertColumn(8,_T("产品规格"),LVCFMT_LEFT,80); 
+	this->m_ListCtrlRecord.InsertColumn(9,_T("动闪温度"),LVCFMT_LEFT,80); 
+	this->m_ListCtrlRecord.InsertColumn(10,_T("复闪温度"),LVCFMT_LEFT,80); 
+	this->m_ListCtrlRecord.InsertColumn(11,_T("动作时间"),LVCFMT_LEFT,80);  
+	this->m_ListCtrlRecord.InsertColumn(12,_T("复位时间"),LVCFMT_LEFT,80);  
+ 	
+	m_ComboBoxSortType.AddString(_T("按测试序号")); 
+	m_ComboBoxSortType.AddString(_T("按温度由高到低"));
+	m_ComboBoxSortType.AddString(_T("按温度由低到高"));
+	m_ComboBoxSortType.SetCurSel(0);
+
+	memset(m_SwitchTestResult_Ex,0,sizeof(m_SwitchTestResult_Ex));
+
+
+
+	// TODO: Add extra initialization here
+	
+	this->m_ComboPrintType.SetCurSel(AfxGetApp()->GetProfileIntW(_T("SETTING"),_T("PRINT TYPE"),0)); 
+
+	HTREEITEM m_TreeRoot = NULL;//m_DirTreeCtrl.InsertItem(_T("测试记录"),0,0);//插入根节点
+	CString sDir;
+	sDir.Format(_T("\\log\\box%d\\"),this->m_BoxNr + 1);
+	ShowFile(::theAppDirectory + sDir , m_TreeRoot);//以E:\\test为根目录进行遍历
+
+	m_DirTreeCtrl.Expand(m_TreeRoot,TVE_EXPAND);
+
+	this->UpdateData(false); 
+	return TRUE;  // return TRUE unless you set the focus to a control
+	              // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CRecordViewDlg::OnClose() 
+{
+	// TODO: Add your message handler code here and/or call default
+	
+	CDialog::OnClose();
+}
+
+
+ 
+extern void TraverseFolder(LPCTSTR lpPath,LPCTSTR file_ext,CStringArray *fileStr);
+
+
+
+extern TCHAR level_str[18][10];
+
+void CRecordViewDlg::UpdateRecordDetail(CString begin, CString end)
+{
+		CFile RecFile;
+		CString fName,ym_str;
+		CFileFind ff;
+		RECORD	record;
+		CString header;
+		CString s;
+		CTimeSpan BeginSpan,EndSpan;
+		int years,months,days,hours,minutes,seconds;
+		
+		years = (begin.GetAt(0) - '0')*1000
+				+(begin.GetAt(1) - '0')*100
+				+(begin.GetAt(2) - '0')*10
+				+(begin.GetAt(3) - '0');
+
+		months = (begin.GetAt(5) - '0')*10
+				+(begin.GetAt(6) - '0');
+
+		days	= (begin.GetAt(8) - '0')*10
+				+(begin.GetAt(9) - '0');
+
+		hours	= (begin.GetAt(11) - '0')*10
+				+(begin.GetAt(12) - '0');
+
+		minutes	= (begin.GetAt(14) - '0')*10
+				+(begin.GetAt(15) - '0');
+
+		seconds= (begin.GetAt(17) - '0')*10
+				+(begin.GetAt(18) - '0');
+
+		s.Format(_T("log\\box%d\\%04d%02d%02d%02d%02d%02d-"),m_BoxNr+1,years,months,days,hours,minutes,seconds); 
+		fName = s;
+		m_BeginTestTime = CTime(years,months,days,hours,minutes,0);
+		
+		BeginSpan = m_BeginTestTime - STD_TIME;
+
+		years = (end.GetAt(0) - '0')*1000
+				+(end.GetAt(1) - '0')*100
+				+(end.GetAt(2) - '0')*10
+				+(end.GetAt(3) - '0');
+
+		months = (end.GetAt(5) - '0')*10
+				+(end.GetAt(6) - '0');
+
+		days	= (end.GetAt(8) - '0')*10
+				+(end.GetAt(9) - '0');
+
+		hours	= (end.GetAt(11) - '0')*10
+				+(end.GetAt(12) - '0');
+
+		minutes	= (end.GetAt(14) - '0')*10
+				+(end.GetAt(15) - '0');
+
+		seconds= (end.GetAt(17) - '0')*10
+				+(end.GetAt(18) - '0');
+		s.Format(_T("%04d%02d%02d%02d%02d%02d.record"),years,months,days,hours,minutes,seconds); 
+		fName += s;
+
+		m_EndTestTime = CTime(years,months,days,hours,minutes,0);
+		EndSpan = m_EndTestTime - STD_TIME;
+
+		header = begin;
+		header +=",";
+		header +=end;
+		
+		m_ListCtrlRecord.DeleteAllItems(); 
+		fName = theAppDirectory + fName;
+		if(RecFile.Open(fName,CFile::modeRead))
+		{
+			RecFile.SeekToBegin();
+			RecFile.Read(&record,sizeof(record));
+			RecFile.Close();
+		}
+		else
+		{
+			AfxMessageBox(_T("没有找到文件"));
+			return;
+		}
+
+		int i = 0,j;
+
+						CString strTemp;
+						
+						m_SwitchConfigPara = record.ConfigPara;
+						
+						if(record.SwitchType == 0)
+						{
+							m_TestProductType  = _T("常闭");
+						}
+						else
+						{
+							m_TestProductType  = _T("常开");
+						}
+
+						m_TestParaName.Format(_T("%s"),record.ParaName); 
+						
+						m_TestMemo.Format(_T("%s"),record.Memo);  
+					 
+						for(j = 0; j < G_iMaxLedNr;j++)
+						{	
+							//m_SwitchTestResult[j] = record.TestResult[j];
+							m_SwitchTestResult_Ex[j].ID = j;
+							m_SwitchTestResult_Ex[j].result = record.TestResult[j];
+						}
+						
+						SortRecord();
+
+						for(j = 0; j < G_iMaxLedNr;j++)
+						{
+							int item_count = m_ListCtrlRecord.GetItemCount(); 
+							CString s;
+							s.Format(_T("% 3d"),m_SwitchTestResult_Ex[j].ID+1); 
+							m_ListCtrlRecord.InsertItem(item_count,s);
+							if(m_SwitchTestResult_Ex[j].result.IsUsed)
+							{
+								s = "Y";
+							
+								m_ListCtrlRecord.SetItemText(item_count,1,s);	
+
+								if(m_SwitchTestResult_Ex[j].result.IsOpenned)
+								{
+									s = "Y";
+								}
+								else
+								{
+									s = "N";
+								}
+								m_ListCtrlRecord.SetItemText(item_count,2,s);	
+
+								if(m_SwitchTestResult_Ex[j].result.IsClosed )
+								{
+									s = "Y";
+								}
+								else
+								{
+									s = "N";
+								}
+								m_ListCtrlRecord.SetItemText(item_count,3,s);	 	
+								
+								if(m_SwitchTestResult_Ex[j].result.IsOpenFlash)
+								{
+									s = "Y";
+								}
+								else
+								{
+									s = "N";
+								}
+								m_ListCtrlRecord.SetItemText(item_count,4,s);
+
+								if(m_SwitchTestResult_Ex[j].result.IsCloseFlash)
+								{
+									s = "Y";
+								}
+								else
+								{
+									s = "N";
+								}
+								m_ListCtrlRecord.SetItemText(item_count,5,s);
+
+								s.Format(_T("%5.1f"),m_SwitchTestResult_Ex[j].result.OpenTemp);
+								m_ListCtrlRecord.SetItemText(item_count,6,s);
+
+								s.Format(_T("%5.1f"),m_SwitchTestResult_Ex[j].result.CloseTemp);
+								m_ListCtrlRecord.SetItemText(item_count,7,s);
+								
+								TEST_RESULT_LEVEL level =CheckTestLevel(record.ConfigPara,
+												m_SwitchTestResult_Ex[j].result);
+								m_ListCtrlRecord.SetItemText(item_count,8,level_str[level]);
+
+
+								s.Format(_T("%5.1f"),m_SwitchTestResult_Ex[j].result.OpenFlashTemp);
+								m_ListCtrlRecord.SetItemText(item_count,9,s);
+
+								s.Format(_T("%5.1f"),m_SwitchTestResult_Ex[j].result.CloseFlashTemp);
+								m_ListCtrlRecord.SetItemText(item_count,10,s);
+
+								CTime t = GetRecordTime(m_SwitchTestResult_Ex[j].result.OpenTime);
+								m_ListCtrlRecord.SetItemText(item_count,11,t.Format(_T("%H:%M:%S")));
+								
+								t = GetRecordTime(m_SwitchTestResult_Ex[j].result.CloseTime);
+								m_ListCtrlRecord.SetItemText(item_count,12,t.Format(_T("%H:%M:%S")));
+							}
+							else
+							{
+								continue;
+								s = "无产品";
+								m_ListCtrlRecord.SetItemText(item_count,1,s);
+								m_ListCtrlRecord.SetItemText(item_count,2,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,3,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,4,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,5,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,6,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,7,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,8,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,9,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,10,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,11,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,12,_T("-"));
+							}
+						}
+
+						float open_max_temp, open_min_temp,open_avr_temp,close_max_temp,close_min_temp,close_avr_temp;
+						int total_product,total_main_level;
+
+						CString str;
+						m_Para = "";
+						str.Format(_T("主规格:%5.1f 负偏差:%5.1f 正偏差:%5.1f "),record.ConfigPara.MainLevel,record.ConfigPara.MainLevelSpanMinus,record.ConfigPara.MainLevelSpanPlus);      
+						m_Para += str;
+						str.Format(_T("主复位:%5.1f 负偏差:%5.1f 正偏差:%5.1f\r\n"),record.ConfigPara.CloseLevel,record.ConfigPara.CloseLevelSpanMinus,record.ConfigPara.CloseLevelSpanPlus);      
+						m_Para += str;
+
+						str.Format(_T("高规格:%5.1f 负偏差:%5.1f 正偏差:%5.1f "),record.ConfigPara.HighLevel,record.ConfigPara.HighLevelSpanMinus,record.ConfigPara.HighLevelSpanPlus);      
+						m_Para += str;
+						str.Format(_T("高复位:%5.1f 负偏差:%5.1f 正偏差:%5.1f\r\n"),record.ConfigPara.CloseHighLevel,record.ConfigPara.CloseHighLevelSpanMinus,record.ConfigPara.CloseHighLevelSpanPlus);      
+						m_Para += str;
+
+						str.Format(_T("低规格:%5.1f 负偏差:%5.1f 正偏差:%5.1f "),record.ConfigPara.LowLevel,record.ConfigPara.LowLevelSpanMinus,record.ConfigPara.LowLevelSpanPlus);      
+						m_Para += str;
+						str.Format(_T("低复位:%5.1f 负偏差:%5.1f 正偏差:%5.1f\r\n"),record.ConfigPara.CloseLowLevel,record.ConfigPara.CloseLowLevelSpanMinus,record.ConfigPara.CloseLowLevelSpanPlus);      
+						m_Para += str;
+						this->TongJi(&open_max_temp, &open_min_temp, &open_avr_temp, &close_max_temp, &close_min_temp, &close_avr_temp, &total_product, &total_main_level);
+						
+						str.Format(_T("产品数:%d 合格品:%d 合格率:%5.1f%%\r\n动作最高温:%5.1f 动作最低温:%5.1f  动作平均温:%5.1f \r\n复位最高温:%5.1f 复位最低温:%5.1f  复位平均温:%5.1f"),total_product,total_main_level,(float)(total_main_level*100.0f/total_product),
+							open_max_temp,open_min_temp,(open_avr_temp),close_max_temp,close_min_temp,(close_avr_temp));
+						m_Para += str;
+
+						this->UpdateData(false);
+						
+
+}
+
+void CRecordViewDlg::UpdateRecordDetail(CString FileName)
+{
+		CFile RecFile;
+		
+		CFileFind ff;
+		RECORD	record;
+		CString header;
+		CString s;
+
+		
+		m_ListCtrlRecord.DeleteAllItems(); 
+		s.Format(_T("box%d\\"),m_BoxNr + 1); 
+		FileName = theAppDirectory + _T("log\\") + s + FileName;
+		if(RecFile.Open(FileName,CFile::modeRead))
+		{
+			RecFile.SeekToBegin();
+			RecFile.Read(&record,sizeof(record));
+			RecFile.Close();
+		}
+		else
+		{
+			AfxMessageBox(_T("没有找到文件"));
+			return;
+		}
+
+		m_BeginTestTime =	GetRecordTime(record.BeginStart_From201001010000Minutes * 60L);
+
+		m_EndTestTime	=	GetRecordTime(record.EndStart_From201001010000Minutes   * 60L);
+
+		int i = 0,j;
+
+						CString strTemp;
+						
+						m_SwitchConfigPara = record.ConfigPara;
+						
+						if(record.SwitchType == 0)
+						{
+							m_TestProductType  = _T("常闭");
+						}
+						else
+						{
+							m_TestProductType  = _T("常开");
+						}
+
+						m_TestParaName.Format(_T("%s"),record.ParaName); 
+						
+						m_TestMemo.Format(_T("%s"),record.Memo);  
+					 
+						for(j = 0; j < G_iMaxLedNr;j++)
+						{	
+							//m_SwitchTestResult[j] = record.TestResult[j];
+							m_SwitchTestResult_Ex[j].ID = j;
+							m_SwitchTestResult_Ex[j].result = record.TestResult[j];
+						}
+						
+						SortRecord();
+
+						for(j = 0; j < G_iMaxLedNr;j++)
+						{
+							int item_count = m_ListCtrlRecord.GetItemCount(); 
+							CString s;
+							s.Format(_T("% 3d"),m_SwitchTestResult_Ex[j].ID+1); 
+							m_ListCtrlRecord.InsertItem(item_count,s);
+							if(m_SwitchTestResult_Ex[j].result.IsUsed)
+							{
+								s = "Y";
+							
+								m_ListCtrlRecord.SetItemText(item_count,1,s);	
+
+								if(m_SwitchTestResult_Ex[j].result.IsOpenned)
+								{
+									s = "Y";
+								}
+								else
+								{
+									s = "N";
+								}
+								m_ListCtrlRecord.SetItemText(item_count,2,s);	
+
+								if(m_SwitchTestResult_Ex[j].result.IsClosed )
+								{
+									s = "Y";
+								}
+								else
+								{
+									s = "N";
+								}
+								m_ListCtrlRecord.SetItemText(item_count,3,s);	 	
+								
+								if(m_SwitchTestResult_Ex[j].result.IsOpenFlash)
+								{
+									s = "Y";
+								}
+								else
+								{
+									s = "N";
+								}
+								m_ListCtrlRecord.SetItemText(item_count,4,s);
+
+								if(m_SwitchTestResult_Ex[j].result.IsCloseFlash)
+								{
+									s = "Y";
+								}
+								else
+								{
+									s = "N";
+								}
+								m_ListCtrlRecord.SetItemText(item_count,5,s);
+
+								s.Format(_T("%5.1f"),m_SwitchTestResult_Ex[j].result.OpenTemp);
+								m_ListCtrlRecord.SetItemText(item_count,6,s);
+
+								s.Format(_T("%5.1f"),m_SwitchTestResult_Ex[j].result.CloseTemp);
+								m_ListCtrlRecord.SetItemText(item_count,7,s);
+								
+								TEST_RESULT_LEVEL level =CheckTestLevel(record.ConfigPara,
+												m_SwitchTestResult_Ex[j].result);
+								m_ListCtrlRecord.SetItemText(item_count,8,level_str[level]);
+
+
+								s.Format(_T("%5.1f"),m_SwitchTestResult_Ex[j].result.OpenFlashTemp);
+								m_ListCtrlRecord.SetItemText(item_count,9,s);
+
+								s.Format(_T("%5.1f"),m_SwitchTestResult_Ex[j].result.CloseFlashTemp);
+								m_ListCtrlRecord.SetItemText(item_count,10,s);
+
+								CTime t = GetRecordTime(m_SwitchTestResult_Ex[j].result.OpenTime);
+								m_ListCtrlRecord.SetItemText(item_count,11,t.Format(_T("%H:%M:%S")));
+								
+								t = GetRecordTime(m_SwitchTestResult_Ex[j].result.CloseTime);
+								m_ListCtrlRecord.SetItemText(item_count,12,t.Format(_T("%H:%M:%S")));
+							}
+							else
+							{
+								continue;
+								s = "无产品";
+								m_ListCtrlRecord.SetItemText(item_count,1,s);
+								m_ListCtrlRecord.SetItemText(item_count,2,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,3,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,4,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,5,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,6,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,7,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,8,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,9,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,10,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,11,_T("-"));
+								m_ListCtrlRecord.SetItemText(item_count,12,_T("-"));
+							}
+						}
+
+						float open_max_temp, open_min_temp,open_avr_temp,close_max_temp,close_min_temp,close_avr_temp;
+						int total_product,total_main_level;
+
+						CString str;
+						m_Para = "";
+						str.Format(_T("主规格:%5.1f 负偏差:%5.1f 正偏差:%5.1f "),record.ConfigPara.MainLevel,record.ConfigPara.MainLevelSpanMinus,record.ConfigPara.MainLevelSpanPlus);      
+						m_Para += str;
+						str.Format(_T("主复位:%5.1f 负偏差:%5.1f 正偏差:%5.1f\r\n"),record.ConfigPara.CloseLevel,record.ConfigPara.CloseLevelSpanMinus,record.ConfigPara.CloseLevelSpanPlus);      
+						m_Para += str;
+
+						str.Format(_T("高规格:%5.1f 负偏差:%5.1f 正偏差:%5.1f "),record.ConfigPara.HighLevel,record.ConfigPara.HighLevelSpanMinus,record.ConfigPara.HighLevelSpanPlus);      
+						m_Para += str;
+						str.Format(_T("高复位:%5.1f 负偏差:%5.1f 正偏差:%5.1f\r\n"),record.ConfigPara.CloseHighLevel,record.ConfigPara.CloseHighLevelSpanMinus,record.ConfigPara.CloseHighLevelSpanPlus);      
+						m_Para += str;
+
+						str.Format(_T("低规格:%5.1f 负偏差:%5.1f 正偏差:%5.1f "),record.ConfigPara.LowLevel,record.ConfigPara.LowLevelSpanMinus,record.ConfigPara.LowLevelSpanPlus);      
+						m_Para += str;
+						str.Format(_T("低复位:%5.1f 负偏差:%5.1f 正偏差:%5.1f\r\n"),record.ConfigPara.CloseLowLevel,record.ConfigPara.CloseLowLevelSpanMinus,record.ConfigPara.CloseLowLevelSpanPlus);      
+						m_Para += str;
+						this->TongJi(&open_max_temp, &open_min_temp, &open_avr_temp, &close_max_temp, &close_min_temp, &close_avr_temp, &total_product, &total_main_level);
+						
+						str.Format(_T("产品数:%d 合格品:%d 合格率:%5.1f%%\r\n动作最高温:%5.1f 动作最低温:%5.1f  动作平均温:%5.1f \r\n复位最高温:%5.1f 复位最低温:%5.1f  复位平均温:%5.1f"),total_product,total_main_level,(float)(total_main_level*100.0f/total_product),
+							open_max_temp,open_min_temp,(open_avr_temp),close_max_temp,close_min_temp,(close_avr_temp));
+						m_Para += str;
+
+						this->UpdateData(false);
+						
+
+}
+
+
+
+void CRecordViewDlg::OnButtonPrn() 
+{
+	// TODO: Add your control notification handler code here
+	CPrintDialog prnDlg(true);//false);
+	CString printer;
+	CDC dc;
+	int i;
+	
+	if(this->m_ListCtrlRecord.GetItemCount() < 1)
+	{
+		AfxMessageBox(_T("请选择具体的生产记录"));
+		return;
+	}
+
+	if(prnDlg.DoModal() != IDOK)
+	{
+		AfxMessageBox(_T("打印取消!"));
+		return;
+	}
+	printer  = prnDlg.GetDeviceName();
+//		AfxMessageBox(printer);
+
+	if(!dc.CreateDC(_T(""),printer,_T(""),NULL))
+	{
+		AfxMessageBox(_T("请设置打印机"));
+		return;
+	}	
+	
+	DOCINFO docInfo;
+	memset(&docInfo, 0, sizeof(DOCINFO));
+	docInfo.cbSize = sizeof(DOCINFO);
+	CString strTitle;
+	strTitle.Format(_T("%04d%02d%02d%02d%02d"),
+		m_BeginTestTime.GetYear(),
+		m_BeginTestTime.GetMonth(), 
+		m_BeginTestTime.GetDay(), 
+		m_BeginTestTime.GetHour(), 
+		m_BeginTestTime.GetMinute()); 
+	//this->GetWindowText(strTitle); 
+	CString app_name = _T("热保护器测试记录");
+	//AfxGetApp()->GetMainWnd()->GetWindowText(app_name);
+	app_name += "[";
+	app_name += strTitle;
+	app_name += "]";
+	docInfo.lpszDocName =   app_name;
+
+
+	i=dc.StartDoc(&docInfo);  
+	i=	dc.StartPage();
+
+	CString BoxNr;
+
+
+	BoxNr.Format(_T("%d"), m_BoxNr + 3-2);
+
+	//AfxMessageBox("打印1");
+	
+	PrintReport_ByGroup(&dc,app_name, m_BoxNr,
+				m_BeginTestTime,m_EndTestTime,
+				m_TestParaName,m_TestProductType, m_TestMemo,
+				m_SwitchConfigPara,m_SwitchTestResult_Ex,
+				TRUE,0,127,(HEAT_BOX_TYPE)m_HeatBoxType);
+
+	
+
+
+	i =	dc.EndPage(); 
+	
+	if(G_iMaxLedNr > 128)
+	{
+		i = dc.StartPage();
+	//	AfxMessageBox("打印2");
+		PrintReport_ByGroup(&dc,app_name, m_BoxNr,
+					m_BeginTestTime,m_EndTestTime,
+					m_TestParaName,m_TestProductType,m_TestMemo, 
+					m_SwitchConfigPara,m_SwitchTestResult_Ex,
+					TRUE,128,G_iMaxLedNr - 1,(HEAT_BOX_TYPE)m_HeatBoxType);
+
+		i =	dc.EndPage(); 
+	}
+
+	i =	dc.EndDoc(); 
+	
+	dc.DeleteDC();
+
+}
+
+void CRecordViewDlg::TongJi(float *open_max_temp, float *open_min_temp, float *open_avr_temp, float *close_max_temp, float *close_min_temp, float *close_avr_temp, int *total_product, int *total_main_level)
+{
+		CString str;
+		(*open_max_temp) = 0.0f;
+		(*open_min_temp) = 999.9f;
+		(*open_avr_temp) = 0.0f;
+		(*close_max_temp)= 0.0f;
+		(*close_min_temp)= 999.9f;
+		(*close_avr_temp)= 0.0f;
+		(*total_product) = G_iMaxLedNr;
+		(*total_main_level) = 0;
+		int  open_count=0,close_count=0;  
+		int j;
+		float temp;
+
+		for(j = 0; j < G_iMaxLedNr;j++)
+		{
+			str = m_ListCtrlRecord.GetItemText(j, 8);
+			if(str.Find(_T("主规格")) >= 0)
+			{
+				(*total_main_level) ++;
+			}
+			else if(str.Find(_T("高规格")) >= 0)
+			{
+				(*total_main_level) ++;
+			}
+			else if(str.Find(_T("低规格")) >= 0)
+			{
+				(*total_main_level) ++;
+			}
+			
+			//if(str.Find(_T("无产品")) >= 0)
+			if((str.Find(_T("-")) >= 0)  || (str.GetLength() == 0 ) )
+			{
+				(*total_product) --;
+			}
+			str = m_ListCtrlRecord.GetItemText(j, 6);
+			//temp = atof(str);
+			temp = _tcstod(str,NULL);
+			if(temp > 0.0f && temp < 200.0f)
+			{
+				if((*open_max_temp) < temp)
+				{
+					(*open_max_temp) = temp;
+				}
+				if((*open_min_temp) > temp)
+				{
+					(*open_min_temp) = temp;
+				}
+				(*open_avr_temp) += temp;
+				open_count ++;
+			}
+			str = m_ListCtrlRecord.GetItemText(j, 7);
+			//temp = atof(str);
+			temp = _tcstod(str,NULL);
+			if(temp > 0.0f && temp < 200.0f)
+			{
+				if((*close_max_temp) < temp)
+				{
+					(*close_max_temp) = temp;
+				}
+				if((*close_min_temp) > temp)
+				{
+					(*close_min_temp) = temp;
+				}
+				(*close_avr_temp) += temp;
+				close_count ++;
+			}
+			
+		}
+		if(open_count > 0)
+		{
+			(*open_avr_temp) = (*open_avr_temp) / open_count;
+		}
+		if(close_count > 0)
+		{
+			(*close_avr_temp) = (*close_avr_temp) / close_count;
+		}
+}
+
+
+void CRecordViewDlg::OnButtonTempBar() 
+{
+	// TODO: Add your control notification handler code here
+
+	if(this->m_ListCtrlRecord.GetItemCount() < 1)
+	{
+		AfxMessageBox(_T("请选择具体的生产记录"));
+		return;
+	}
+
+	int j;
+	CString str;
+	CProductTempBar dlg;
+
+	for(j = 0; j < G_iMaxLedNr;j++)
+	{
+		memcpy(&dlg.m_SwitchTestResult[j], &m_SwitchTestResult_Ex[j].result,sizeof(dlg.m_SwitchTestResult[j])) ;
+	}
+	dlg.m_BeginTestTime = m_BeginTestTime;
+	dlg.m_SwitchConfigPara = m_SwitchConfigPara;
+	dlg.DoModal(); 
+	
+}
+
+void CRecordViewDlg::OnButtonPrnPreview() 
+{
+	// TODO: Add your control notification handler code here
+	CPrnPreview dlg;
+	if(this->m_ListCtrlRecord.GetItemCount() < 1)
+	{
+		AfxMessageBox(_T("请选择具体的生产记录"));
+		return;
+	}
+
+	dlg.m_TestParaName		= m_TestParaName;
+	dlg.m_EndTestTime		= m_EndTestTime;
+	dlg.m_BeginTestTime		= m_BeginTestTime;
+	dlg.m_BoxNr = m_BoxNr;
+	dlg.m_SwitchConfigPara	= m_SwitchConfigPara;
+	dlg.m_TestMemo			= m_TestMemo;
+
+
+	memcpy(dlg.m_SwitchTestResult_Ex,m_SwitchTestResult_Ex,sizeof(m_SwitchTestResult_Ex));
+	
+	CString ProductType ;
+
+	dlg.m_TestProductType= m_TestProductType;
+	
+	CString strTitle;
+	this->GetWindowText(strTitle); 
+	CString app_name;
+	AfxGetApp()->GetMainWnd()->GetWindowText(app_name);
+	app_name += _T("[");
+	app_name += strTitle;
+	app_name += _T("]");
+	
+	dlg.m_Title = app_name;
+
+	dlg.DoModal(); 
+}
+
+void CRecordViewDlg::OnButtonTongji() 
+{
+	// TODO: Add your control notification handler code here
+	CChanLiangTongJiDlg dlg;
+	dlg.DoModal(); 
+}
+
+void CRecordViewDlg::OnButtonSaveas() 
+{
+	// TODO: Add your control notification handler code here
+	int j;
+	TCHAR str[1000];
+	TCHAR str1[1000];
+	static TCHAR szFilter[] = _T("Excel Files (*.csv)|*.csv|");
+	CString  file_name;
+	CTime cur = cur.GetCurrentTime();
+
+
+	if(this->m_ListCtrlRecord.GetItemCount() < 1)
+	{
+		AfxMessageBox(_T("请选择具体的生产记录"));
+		return;
+	}
+
+	CString s ;
+	s.Format(_T("生产记录%04d%02d%02d%02d%02d%02d"),
+		m_BeginTestTime.GetYear(), 
+		m_BeginTestTime.GetMonth(), 
+		m_BeginTestTime.GetDay(), 
+		m_BeginTestTime.GetHour(), 
+		m_BeginTestTime.GetMinute(), 
+		m_BeginTestTime.GetSecond()); 
+	
+	CFileDialog dlg(false,_T("*.csv"),s,NULL,szFilter);
+
+	int ret = dlg.DoModal();
+	
+	CFile RecFile;
+
+	
+	if(ret == IDOK)
+	{
+		file_name = dlg.GetPathName();
+	
+		if(RecFile.Open(file_name,CFile::modeReadWrite | CFile::modeCreate | CFile::modeNoTruncate ))
+		{
+
+			RecFile.Write(&UNICODE_FILE_HEAR,2);
+			RecFile.Write(&CSV_COMMMA,2);
+			RecFile.Write(&CSV_COMMMA,2);
+			s = _T("热保护器测试报告\r\n");
+			RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );
+
+
+			s = _T("公司名称");
+			RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );RecFile.Write(&CSV_COMMMA,2);
+			s = AfxGetApp()->GetProfileStringW(_T("SETTING"),_T("USER"),_T("常州市润邦电子科技有限公司")) ;
+			s += _T("\r\n");
+			RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );
+	
+
+	//产品规格
+	s = _T("产品规格");
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );RecFile.Write(&CSV_COMMMA,2);
+	s = m_TestParaName + _T("\r\n"); 
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );
+	
+	//产品类型
+	s = _T("产品类型");
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );RecFile.Write(&CSV_COMMMA,2);
+	s = m_TestProductType + _T("\r\n");
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );
+	
+	
+	s = _T("测试说明");
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );RecFile.Write(&CSV_COMMMA,2);
+	s = m_TestMemo + _T("\r\n");
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );
+	
+
+	s = _T("烘箱编号");
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );RecFile.Write(&CSV_COMMMA,2);
+	s.Format(_T("%d\r\n"), m_BoxNr + 1); 
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );
+	s = _T("开始测试时间");
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );RecFile.Write(&CSV_COMMMA,2);
+	s.Format(_T("%04d-%02d-%02d %02d:%02d\r\n"),m_BeginTestTime.GetYear(),m_BeginTestTime.GetMonth(),m_BeginTestTime.GetDay(),m_BeginTestTime.GetHour(),m_BeginTestTime.GetMinute());
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );
+
+	s = _T("结束测试时间");
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );RecFile.Write(&CSV_COMMMA,2);
+	s.Format(_T("%04d-%02d-%02d %02d:%02d\r\n"),m_EndTestTime.GetYear(),m_EndTestTime.GetMonth(),m_EndTestTime.GetDay(),m_EndTestTime.GetHour(),m_EndTestTime.GetMinute()); 
+	RecFile.Write(s,s.GetLength() * sizeof(TCHAR) );
+
+			_stprintf_s(str,_T("序号%c动作温度%c复位温度%c规格%c动作时间%c复位时间\r\n"),CSV_COMMMA,CSV_COMMMA,CSV_COMMMA,CSV_COMMMA,CSV_COMMMA);
+			RecFile.Write(str,wcslen(str) * sizeof(TCHAR));
+				
+			for(j = 0; j < G_iMaxLedNr;j++)
+			{
+				if(m_SwitchTestResult_Ex[j].result.IsUsed)
+				{
+					if(G_iMaxLedNr == 192)
+					{
+						if((j % 12) < 9)
+						{
+							_stprintf_s(str,_T("%d%d%c"),m_SwitchTestResult_Ex[j].ID/12,(j%12)+1,CSV_COMMMA);				
+						}
+						else if((j % 12) == 9)
+						{
+							_stprintf_s(str,_T("%d0%c"),m_SwitchTestResult_Ex[j].ID/12 + 1,CSV_COMMMA);				
+						}
+						else if((j % 12) == 10)
+						{
+							_stprintf_s(str,_T("%dA%c"),m_SwitchTestResult_Ex[j].ID/12 + 1,CSV_COMMMA);				
+						}
+						else if((j % 12) == 11)
+						{
+							_stprintf_s(str,_T("%dB%c"),m_SwitchTestResult_Ex[j].ID/12 +1,CSV_COMMMA);				
+						}
+					}
+					else
+					{
+						_stprintf_s(str,_T("%d%c"),m_SwitchTestResult_Ex[j].ID + 1,CSV_COMMMA);				
+					}
+					CTime t = GetRecordTime(m_SwitchTestResult_Ex[j].result.OpenTime); 
+					CTime t1 = GetRecordTime(m_SwitchTestResult_Ex[j].result.CloseTime); 
+					_stprintf_s(str1,_T("%5.1f%c%5.1f%c%s%c%04d/%02d/%02d %02d:%02d:%02d%c%04d/%02d/%02d %02d:%02d:%02d\r\n"),
+						m_SwitchTestResult_Ex[j].result.OpenTemp,CSV_COMMMA,
+						m_SwitchTestResult_Ex[j].result.CloseTemp,CSV_COMMMA,
+						level_str_4_csv[CheckTestLevel(m_SwitchConfigPara,m_SwitchTestResult_Ex[j].result)],CSV_COMMMA,
+						t.GetYear(),t.GetMonth(),t.GetDay(),t.GetHour(),t.GetMinute(),t.GetSecond(),CSV_COMMMA,
+						t1.GetYear(),t1.GetMonth(),t1.GetDay(),t1.GetHour(),t1.GetMinute(),t1.GetSecond());   
+					wcscat_s(str,str1);
+					RecFile.Write(str,wcslen(str) * sizeof(TCHAR));
+				}
+				else
+				{
+					
+				}
+			}
+
+			RecFile.Close();
+		}
+	}
+	
+	
+
+}
+
+
+
+void CRecordViewDlg::OnBnClickedButtonSaveas2()
+{
+	// TODO: 在此添加控件通知处理程序代码
+/*
+	CFile	RecFile;
+	CString file_name;
+	char	str[1000],str1[1000];
+	int		j;
+	for(int i = 0; i < m_ListCtrlRecordTime.GetItemCount(); i++)
+	{
+		CString s1 = m_ListCtrlRecordTime.GetItemText(i,0);  
+		CString s2 = m_ListCtrlRecordTime.GetItemText(i,1);  
+		
+		//this->UpdateRecordDetail(s1,s2); 
+		FindRecordDetail(s1,s2);
+		CString DirName;
+
+		DirName.Format( _T("d:\\\\测试记录%d"),m_BoxNr);
+
+		if (!::PathIsDirectory(DirName))
+		{
+			::CreateDirectory(DirName, NULL);
+		}
+		file_name = _T("测试记录");//201607132154.csv");
+
+		file_name += s1;
+		file_name +=_T(".csv");
+		file_name.Replace(_T("-"),_T(""));
+		file_name.Replace(_T(" "),_T(""));
+		file_name.Replace(_T(":"),_T(""));
+		DirName += "\\";
+		file_name = DirName + file_name;
+		
+		if(RecFile.Open(file_name,CFile::modeReadWrite | CFile::modeCreate | CFile::modeNoTruncate ))
+		{
+			sprintf_s(str,"序号,动作温度,复位温度,规格,动作时间,复位时间\r\n");
+			RecFile.Write(str,strlen(str));
+				
+			for(j = 0; j < G_iMaxLedNr;j++)
+			{
+				if(m_SwitchTestResult_Ex[j].result.IsUsed)
+				{
+					if(G_iMaxLedNr == 192)
+					{
+						if((j % 12) < 9)
+						{
+							sprintf_s(str,"%d%d,",m_SwitchTestResult_Ex[j].ID /12,(m_SwitchTestResult_Ex[j].ID%12)+1 );				
+						}
+						else if((j % 12) == 9)
+						{
+							sprintf_s(str,"%d0,",m_SwitchTestResult_Ex[j].ID/12 + 1);				
+						}
+						else if((j % 12) == 10)
+						{
+							sprintf_s(str,"%dA,",m_SwitchTestResult_Ex[j].ID/12 + 1);				
+						}
+						else if((j % 12) == 11)
+						{
+							sprintf_s(str,"%dB,",m_SwitchTestResult_Ex[j].ID/12 +1);				
+						}
+					}
+					else
+					{
+						sprintf_s(str,"%d,",m_SwitchTestResult_Ex[j].ID + 1);				
+					}
+					CTime t = GetRecordTime(m_SwitchTestResult_Ex[j].result .OpenTime); 
+					CTime t1 = GetRecordTime(m_SwitchTestResult_Ex[j].result.CloseTime); 
+					sprintf_s(str1,"%5.1f,%5.1f,%s,%04d/%02d/%02d %02d:%02d:%02d,%04d/%02d/%02d %02d:%02d:%02d\r\n",m_SwitchTestResult_Ex[j].result.OpenTemp,m_SwitchTestResult_Ex[j].result.CloseTemp,level_str_4_csv[CheckTestLevel(m_SwitchConfigPara,m_SwitchTestResult_Ex[j].result)],
+						t.GetYear(),t.GetMonth(),t.GetDay(),t.GetHour(),t.GetMinute(),t.GetSecond(),
+						t1.GetYear(),t1.GetMonth(),t1.GetDay(),t1.GetHour(),t1.GetMinute(),t1.GetSecond());   
+					strcat_s(str,str1);
+					RecFile.Write(str,strlen(str));
+				}
+				else
+				{
+					sprintf_s(str,"%d,",j + 1);
+					strcat_s(str,"-,-,无产品,-,-,\r\n");
+					RecFile.Write(str,strlen(str));
+				}
+			}
+
+			RecFile.Close();
+		}
+	}
+*/
+}
+
+void CRecordViewDlg::OnBnClickedDelete()
+{
+	RemoveDirectory(_T("c:\\a"));
+}
+
+void CRecordViewDlg::OnBnClickedButtonTakedlg()
+{
+	// TODO: 在此添加控件通知处理程序代码
+ 
+
+	if(this->m_ListCtrlRecord.GetItemCount() < 1)
+	{
+		AfxMessageBox(_T("请选择具体的生产记录"));
+		return;
+	}
+
+	CTakeoutDlg dlg;
+	dlg.m_BoxNr = 5;
+	dlg.m_WindowText	= _T("历史记录查看"); 
+
+	for(int j = 0; j < G_iMaxLedNr;j++)
+	{
+		memcpy(&G_TakeDlgSwitchTestResult[1][j], &m_SwitchTestResult_Ex[j].result, sizeof(G_TakeDlgSwitchTestResult[1][j]));
+		memcpy(&G_TakeDlgSwitchTestResult_Bak[1][j], &m_SwitchTestResult_Ex[j].result, sizeof(G_TakeDlgSwitchTestResult_Bak[1][j]));
+	}
+
+	dlg.m_iTakeBoardType = 1;
+	dlg.m_fOpenTempShow  = 999.99f;
+	dlg.m_BeginTestTime		= m_BeginTestTime;
+	dlg.m_SwitchConfigPara	= m_SwitchConfigPara;
+	dlg.DoModal(); 
+
+}
+SWITCH_TEST_RESULT_EX G_SwitchTestResult_Ex[192];
+
+void CRecordViewDlg::SortRecord()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	int id = 0;
+
+	SWITCH_TEST_RESULT_EX temp_result;
+
+	switch(m_ComboBoxSortType.GetCurSel())
+	{
+	case 1:
+		for(int i = 0; i < G_iMaxLedNr; i++)
+		{
+			for(int j = i+1; j < G_iMaxLedNr; j++)
+			{
+				if(m_SwitchTestResult_Ex[i].result.OpenTemp <  m_SwitchTestResult_Ex[j].result.OpenTemp)
+				{
+					temp_result = m_SwitchTestResult_Ex[i];
+					m_SwitchTestResult_Ex[i] = m_SwitchTestResult_Ex[j];
+					m_SwitchTestResult_Ex[j] = temp_result;
+				}
+			}
+		}
+		break;
+	case 2:
+		
+		for(int i = 0; i < G_iMaxLedNr; i++)
+		{
+			for(int j = i+1; j < G_iMaxLedNr; j++)
+			{
+				if(m_SwitchTestResult_Ex[i].result.OpenTemp >  m_SwitchTestResult_Ex[j].result.OpenTemp)
+				{
+					temp_result = m_SwitchTestResult_Ex[i];
+					m_SwitchTestResult_Ex[i] = m_SwitchTestResult_Ex[j];
+					m_SwitchTestResult_Ex[j] = temp_result;
+				}
+			}
+		}
+		break;
+	case 3:
+		//按组号
+		id = 0;
+
+		for(int group = 0; group <= 10; group++)
+		{
+			for(int i = 0; i < G_iMaxLedNr; i++)
+			{
+				if(m_SwitchTestResult_Ex[i].result.Group == group)
+				{
+					
+					G_SwitchTestResult_Ex[id] = m_SwitchTestResult_Ex[i];
+					id ++;
+				}
+			}
+		}
+
+		for(int i = 0; i < G_iMaxLedNr; i++)
+		{
+			m_SwitchTestResult_Ex[i] = G_SwitchTestResult_Ex[i];
+				
+		}
+
+		break;
+	default:
+		for(int i = 0; i < G_iMaxLedNr; i++)
+		{
+			for(int j = i+1; j < G_iMaxLedNr; j++)
+			{
+				if(m_SwitchTestResult_Ex[i].ID >  m_SwitchTestResult_Ex[j].ID)
+				{
+					temp_result = m_SwitchTestResult_Ex[i];
+					m_SwitchTestResult_Ex[i] = m_SwitchTestResult_Ex[j];
+					m_SwitchTestResult_Ex[j] = temp_result;
+				}
+			}
+		}
+		break;
+	}
+}
+void CRecordViewDlg::OnCbnSelchangeComboSortType()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	this->UpdateRecordDetail(m_SelectedFileName); 
+}
+
+
+void CRecordViewDlg::OnCbnSelchangeComboPrintType()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	switch(m_ComboPrintType.GetCurSel())
+	{
+	case 1:
+		AfxGetApp()->WriteProfileInt(_T("SETTING"),_T("PRINT TYPE"),1); 
+		break;
+	case 2:
+		AfxGetApp()->WriteProfileInt(_T("SETTING"),_T("PRINT TYPE"),2);
+		break;
+	default:
+		AfxGetApp()->WriteProfileInt(_T("SETTING"),_T("PRINT TYPE"),0);
+		break;
+	}
+}
+
+void CRecordViewDlg::OnBnClickedButtonOpenTempShow()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	if(this->m_ListCtrlRecord.GetItemCount() < 1)
+	{
+		AfxMessageBox(_T("请选择具体的生产记录"));
+		return;
+	}
+
+	CTakeoutDlg dlg;
+	dlg.m_BoxNr = 5;
+	dlg.m_WindowText	= _T("历史记录查看"); 
+
+	for(int j = 0; j < G_iMaxLedNr;j++)
+	{
+		memcpy(&G_TakeDlgSwitchTestResult[1][j], &m_SwitchTestResult_Ex[j].result, sizeof(G_TakeDlgSwitchTestResult[1][j]));
+		memcpy(&G_TakeDlgSwitchTestResult_Bak[1][j], &m_SwitchTestResult_Ex[j].result, sizeof(G_TakeDlgSwitchTestResult_Bak[1][j]));
+	}
+
+	dlg.m_iTakeBoardType = 1;
+	dlg.m_fOpenTempShow  = 0;
+	dlg.m_BeginTestTime		= m_BeginTestTime;
+	dlg.m_SwitchConfigPara	= m_SwitchConfigPara;
+	dlg.SetAllSelected_NoNotUsed();
+	dlg.DoModal(); 
+}
+
+void CRecordViewDlg::ShowFile(CString str_Dir, HTREEITEM tree_Root)
+{
+    HTREEITEM tree_Temp;
+	HANDLE hFile;
+	WIN32_FIND_DATA file_find_data;
+	DWORD errorcode = 0;
+
+    //判断输入目录最后是否存在'\'，不存在则补充
+    if (str_Dir.Right(1) != _T('\\'))
+        str_Dir += _T("\\");
+   
+	hFile=FindFirstFile(str_Dir + _T("*.*") ,&file_find_data);
+
+	if(hFile == INVALID_HANDLE_VALUE)
+	{
+		return;
+	}
+
+	tree_Temp = tree_Root;
+
+
+	CString FileName = file_find_data.cFileName;
+
+	if((file_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+	&& (FileName.Compare(_T(".")) != 0)  && (FileName.Compare(_T("..")) != 0) ) 
+	{
+		CString strPath  =str_Dir + FileName ; //得到路径，做为递归调用的开始
+		CString strTitle = FileName ;//得到目录名，做为树控的结点
+		//if(FileName.Find(_T("record")) >= 0)
+		{
+			tree_Temp = m_DirTreeCtrl.InsertItem(strTitle, 0, 0, tree_Root);
+			ShowFile(strPath, tree_Temp);
+		}
+	}
+	else if((FileName.Compare(_T(".")) != 0)  && (FileName.Compare(_T("..")) != 0) ) //如果是文件
+	{
+		//得到目录名，做为树控的结点
+		m_DirTreeCtrl.InsertItem(FileName, 0, 0, tree_Temp);
+	}
+	
+	if(::FindNextFile(hFile,&file_find_data) == false)
+	{
+		errorcode = GetLastError();
+	}
+
+	while((hFile!=INVALID_HANDLE_VALUE) && (errorcode!=ERROR_NO_MORE_FILES))
+    {
+       tree_Temp = tree_Root;
+      
+	   CString FileName = file_find_data.cFileName;
+	
+	   if((file_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+       && (FileName.Compare(_T(".")) != 0)  && (FileName.Compare(_T("..")) != 0) ) 
+		{
+			CString strPath  = str_Dir + FileName ; //得到路径，做为递归调用的开始
+            CString strTitle = FileName;			//得到目录名，做为树控的结点
+			//if(FileName.Find(_T("record")) >= 0)
+			{
+				tree_Temp = m_DirTreeCtrl.InsertItem(strTitle, 0, 0, tree_Root);
+				ShowFile(strPath, tree_Temp);
+			}
+        }
+        else if((FileName.Compare(_T(".")) != 0)  && (FileName.Compare(_T("..")) != 0) ) //如果是文件
+        {
+			if(FileName.Find(_T("record")) >= 0)
+			{
+				m_DirTreeCtrl.InsertItem(FileName, 0, 0, tree_Temp);
+			}
+	     }
+
+	   if(::FindNextFile(hFile,&file_find_data) == false)
+	   {
+			errorcode = GetLastError();
+			break;
+	   }
+    }
+
+	::FindClose(hFile); 
+}
+void CRecordViewDlg::OnNMClickTree1(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	// TODO: 在此添加控件通知处理程序代码
+	*pResult = 0;
+
+	
+	
+}
+
+void CRecordViewDlg::OnNMDblclkTree1(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	// TODO: 在此添加控件通知处理程序代码
+	*pResult = 0;
+
+	HTREEITEM treeitem = this->m_DirTreeCtrl.GetSelectedItem(); 
+	CString filename;
+
+	if(treeitem != 0)
+	{
+		filename = m_DirTreeCtrl.GetItemText(treeitem);
+	}
+	if(m_DirTreeCtrl.GetChildItem(treeitem) == 0)
+	{
+		while(1)
+		{
+			
+			treeitem = m_DirTreeCtrl.GetParentItem(treeitem);
+			if(treeitem == 0)
+			{
+				break;
+			}
+			else
+			{
+				filename = m_DirTreeCtrl.GetItemText(treeitem) + _T("\\") + filename;
+			}
+		}
+
+	}
+	if(filename.Find(_T("record")) > 0)
+	{
+		m_SelectedFileName = filename;
+		this->UpdateRecordDetail(m_SelectedFileName); 
+	}
+}
+
+void CRecordViewDlg::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	*pResult = 0;
+}
+
+void CRecordViewDlg::OnBnClickedButtonTempCurve()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	CFullScreenCurve dlg;
+
+	CString CurName = m_SelectedFileName;
+	
+	CurName.Replace(_T("record"),_T("cur"));
+
+	CFile RecFile;
+	CString s;
+	TEMP_RECORD tr[10000];
+	
+	s.Format(_T("box%d\\"),m_BoxNr + 1); 
+	CurName = theAppDirectory + _T("log\\") + s + CurName;
+	if(RecFile.Open(CurName,CFile::modeRead))
+	{
+		RecFile.SeekToBegin();
+		while(1)
+		{
+			DWORD len = RecFile.Read(&tr,sizeof(tr));
+			
+			if(len > 0)
+			{
+				for(int i = 0 ; i < (len / sizeof(TEMP_RECORD)); i++)
+				{
+					dlg.m_TempRecordArray.Add(tr[i]);  
+				}
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		RecFile.Close();
+
+		dlg.m_BoxNr = -1;
+		dlg.DoModal(); 
+	}
+	else
+	{
+		AfxMessageBox(_T("没有找到‘温度曲线’文件"));
+		return;
+	}
+
+
+}
