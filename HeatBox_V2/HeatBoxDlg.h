@@ -153,6 +153,8 @@ public:
 	int				m_NoPcbFlashTest;
 	int				m_NoFlashTest[MAX_HEAT_BOX];
 	SWITCH_TEST_RESULT m_SwitchTestResult[MAX_HEAT_BOX][192];
+
+	CString ExecuteHttpPost(LPCTSTR strUrl, CString strPostData);
 	
 };
 
@@ -243,6 +245,7 @@ public:
 	afx_msg void OnBnClickedButtonFireware();
 	afx_msg void OnBnClickedButtonFireware2();
 	afx_msg void OnBnClickedButtonModifyPassword();
+	
 	CString m_MES_URL;
 };
 
