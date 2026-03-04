@@ -29,7 +29,22 @@ void CBarcodeDlg::DoDataExchange(CDataExchange* pDX)
 
 
 BEGIN_MESSAGE_MAP(CBarcodeDlg, CDialog)
+	ON_BN_CLICKED(IDOK, &CBarcodeDlg::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 
 // CBarcodeDlg 消息处理程序
+
+void CBarcodeDlg::OnBnClickedOk()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	OnOK();
+}
+
+BOOL CBarcodeDlg::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+	CWnd * w = this->GetDlgItem(IDC_EDIT_BARCODE);
+	w->SetFocus();
+	return false;
+}

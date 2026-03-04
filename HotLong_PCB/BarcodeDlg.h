@@ -20,4 +20,6 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	CString m_Barcode;
+	afx_msg void OnBnClickedOk();
+	virtual BOOL OnInitDialog();
 };

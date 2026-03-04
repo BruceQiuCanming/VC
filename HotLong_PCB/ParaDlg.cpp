@@ -514,7 +514,7 @@ void CParaDlg::DisplayRec_PLC(unsigned char *Data,int Date_Len)
 	}
 }
 
-void CParaDlg::DisplayRec_hotLong(int ID,unsigned int counts ,unsigned char *data,int data_len)
+void CParaDlg::DisplayRec_hotLong(int ID,unsigned char *data,int data_len)
 {
 	static unsigned int RecCounts[9] = {0};
 	RecCounts[ID] ++;

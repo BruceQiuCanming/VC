@@ -48,10 +48,25 @@ typedef struct
 
 typedef struct
 {
+	unsigned char RS485_Addr;
+	unsigned char cmd;
+	unsigned char Addr_H;
+	unsigned char Addr_L;
+}MODBUS_RS485_WRITE_ANSWER_HEADER;
+
+typedef struct
+{
 	MODBUS_RS485_HEADER head;
 	unsigned char data[2];
 	unsigned short CRC;
 }MODBUS_RS485_CMD_DATA_LEN_1;
+typedef struct
+{
+	MODBUS_RS485_ANSWER_HEADER head;
+
+	unsigned char data[2*18];
+	unsigned short CRC;
+}MODBUS_RS485_READ_ANSWER_WORD_18;
 typedef struct
 {
 	MODBUS_RS485_ANSWER_HEADER head;
@@ -67,7 +82,7 @@ typedef struct
 }MODBUS_RS485_READ_ANSWER_WORD_3;
 typedef struct
 {
-	MODBUS_RS485_ANSWER_HEADER head;
+	MODBUS_RS485_WRITE_ANSWER_HEADER head;
 
 	unsigned char data[2];
 	unsigned short CRC;

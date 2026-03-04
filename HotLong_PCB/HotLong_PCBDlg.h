@@ -313,7 +313,8 @@ public:
 
 	void WorkMode_X90(int ID);
 	void WorkMode_BIG_AMP(int ID);
-	void WorkMode_Program(void);
+	void WorkMode_Program_X90(void);
+	void WorkMode_Program_BIG_AMP(void);
 	void TimerSend(int SendID);
 	void TimerSend_PLC(void);
 
@@ -463,6 +464,7 @@ public:
 	afx_msg void OnEnSetfocusEditLedColorRight();
 	afx_msg void OnEnSetfocusEditLedColorTop();
 	afx_msg void OnEnSetfocusEditLedColorBottom();
+
 };
 
 

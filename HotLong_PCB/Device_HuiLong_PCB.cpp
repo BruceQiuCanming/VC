@@ -6,6 +6,7 @@
 CDevice_HuiLong_PCB::CDevice_HuiLong_PCB()
 {
 	m_Comm = this;
+	m_SubMode = 0;
 }
 
 CDevice_HuiLong_PCB::~CDevice_HuiLong_PCB()
@@ -16,6 +17,8 @@ CDevice_HuiLong_PCB::~CDevice_HuiLong_PCB()
 void CDevice_HuiLong_PCB::DealOnComm(unsigned char *Data,int DataLen)
 {
 	
+	this->m_LastRecTime = CTime::GetCurrentTime();
+
 	if (m_LastSendCmd.cmd == 0x06)
 	{
 		RemoveFirstWaitCmd();
@@ -39,19 +42,19 @@ void CDevice_HuiLong_PCB::DealOnComm(unsigned char *Data,int DataLen)
 	
 		}
 
-		if (DataLen == sizeof(MODBUS_RS485_READ_ANSWER_WORD_16))
+		if (DataLen == sizeof(MODBUS_RS485_READ_ANSWER_WORD_18))
 		{
-			MODBUS_RS485_READ_ANSWER_WORD_16* Read_Answer_Word_16 = (MODBUS_RS485_READ_ANSWER_WORD_16*)Data;
+			MODBUS_RS485_READ_ANSWER_WORD_18* Read_Answer_Word_18 = (MODBUS_RS485_READ_ANSWER_WORD_18*)Data;
 			CString s;
-			unsigned char* para = (unsigned char*)Read_Answer_Word_16->data;
+			unsigned char* para = (unsigned char*)Read_Answer_Word_18->data;
 			unsigned short v;
-			v = para[0] * 256 + para[1];
+			v = para[2*0] * 256 + para[2*0+1];
 			m_Pv = v;
 
 			v = para[2*2] * 256 + para[2*2+1];
 			m_Sv = v;
 
-			v = para[2*16] * 256 + para[2*16+15];
+			v = para[2*16] * 256 + para[2*16+1];
 			m_Pp = v;
 	
 		}
@@ -94,8 +97,8 @@ void CDevice_HuiLong_PCB::ReadData(void)
 	cmd.head.cmd		= 3;
 	cmd.head.Addr_H		= 0;
 	cmd.head.Addr_L		= 0;
-	cmd.data[0]			= 16 / 256;
-	cmd.data[1]			= 16 % 256;
+	cmd.data[0]			= 18 / 256;
+	cmd.data[1]			= 18 % 256;
 	
 	cmd.CRC = CComm::CRC16_MODBUS((unsigned char*)&cmd, sizeof(cmd) - 2);
 

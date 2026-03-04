@@ -207,6 +207,7 @@ void CHotLong_PCBDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST_7, m_ListMsg[7]);
 	DDX_Control(pDX, IDC_LIST_8, m_ListMsg[8]);
 
+	DDX_Text(pDX, IDC_EDIT_Pv_0, m_Pv[0]);
 	DDX_Text(pDX, IDC_EDIT_Pv_1, m_Pv[1]);
 	DDX_Text(pDX, IDC_EDIT_Pv_2, m_Pv[2]);
 	DDX_Text(pDX, IDC_EDIT_Pv_3, m_Pv[3]);
@@ -226,6 +227,7 @@ void CHotLong_PCBDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_PP_8, m_Pp[8]);
 
 
+	DDX_Text(pDX, IDC_EDIT_Sv_0, m_Sv[0]);
 	DDX_Text(pDX, IDC_EDIT_Sv_1, m_Sv[1]);
 	DDX_Text(pDX, IDC_EDIT_Sv_2, m_Sv[2]);
 	DDX_Text(pDX, IDC_EDIT_Sv_3, m_Sv[3]);
@@ -425,6 +427,7 @@ BEGIN_MESSAGE_MAP(CHotLong_PCBDlg, CDialog)
 	ON_EN_SETFOCUS(IDC_EDIT_LED_COLOR_RIGHT, &CHotLong_PCBDlg::OnEnSetfocusEditLedColorRight)
 	ON_EN_SETFOCUS(IDC_EDIT_LED_COLOR_TOP, &CHotLong_PCBDlg::OnEnSetfocusEditLedColorTop)
 	ON_EN_SETFOCUS(IDC_EDIT_LED_COLOR_BOTTOM, &CHotLong_PCBDlg::OnEnSetfocusEditLedColorBottom)
+
 	END_MESSAGE_MAP()
 
 
@@ -1335,7 +1338,12 @@ void CHotLong_PCBDlg::ReMoveWindows_X90(void)
 
 			this->m_staticScreen.MoveWindow(0,0,CAMERA_WIDTH,CAMERA_HEIGHT,true);
 
-			
+			w = GetDlgItem(IDOK);
+			w->ShowWindow(SW_HIDE);
+			w = GetDlgItem(IDC_BUTTON_PHOTO);
+			w->ShowWindow(SW_HIDE);
+
+
 			/*int ID = ::m_ConfigData.m_Camera_Nr;
 			m_ListCtrl.ResetContent();
 			m_cap.EnumDevices (&m_ListCtrl,m_ListCtrl);
@@ -1537,30 +1545,35 @@ void CHotLong_PCBDlg::ReMoveWindows_X90(void)
 			w = GetDlgItem(IDC_EDIT_MSG);
 			w->MoveWindow(left + width * 4,top + height * 1 ,width * 4,height ,true);
 
-			
-
-			w = GetDlgItem(IDC_CHECK_PCB_BUTTON_TEST_NEEDLE);
-			w->MoveWindow(left + width * 0,top + height * 2 ,width * 2,height,true);
-			w->ShowWindow(SW_HIDE);
-
 			w = GetDlgItem(IDC_CHECK_PCB_BUTTON_TEST_START);
-			w->MoveWindow(left + width * 0,top + height * 3 ,width * 2,height,true);
+			w->MoveWindow(left + width * 0,top + height  * 2 ,width * 2,height,true);
+			
+			w = GetDlgItem(IDC_STATIC_PV_0);
+			w->MoveWindow(left + width * 0,top + height  * 3 ,width * 1,height,true);
+			w = GetDlgItem(IDC_EDIT_Pv_0);
+			w->MoveWindow(left + width * 1,top + height  * 3 ,width * 1,height,true);
+
+			w = GetDlgItem(IDC_STATIC_SV_0);
+			w->MoveWindow(left + width * 0,top + height  * 4 ,width * 1,height,true);
+			w = GetDlgItem(IDC_EDIT_Sv_0);
+			w->MoveWindow(left + width * 1,top + height  * 4 ,width * 1,height,true);
+
+			
+			w = GetDlgItem(IDC_CHECK_PCB_BUTTON_TEST_NEEDLE);
+			w->ShowWindow(SW_HIDE);
 			
 			w = GetDlgItem(IDC_CHECK_PCB_BUTTON_SET);
-			w->MoveWindow(left + width * 0,top + height * 4 ,width * 2,height,true);
 			w->ShowWindow(SW_HIDE);
 
 			w = GetDlgItem(IDC_CHECK_PCB_BUTTON_PLUS);
-			w->MoveWindow(left + width * 0,top + height * 5 ,width * 2,height,true);
 			w->ShowWindow(SW_HIDE);
 
 			w = GetDlgItem(IDC_CHECK_PCB_BUTTON_MINUS);
-			w->MoveWindow(left + width * 0,top + height * 6 ,width * 2,height,true);
 			w->ShowWindow(SW_HIDE);
 
 			w = GetDlgItem(IDC_BUTTON_PROGRAM_START);
 			w->MoveWindow(left + width * 0,top + height * 7 ,width * 4,height * 2,true);
-			w->ShowWindow(SW_HIDE);
+			w->ShowWindow(SW_SHOW);
 
 			w = GetDlgItem(IDC_EDIT_RESULT);
 			w->MoveWindow(left + width * 2,top + height * 2 ,width * 2,height * 5,true);
@@ -2327,10 +2340,6 @@ LRESULT CHotLong_PCBDlg::OnComm_Device_HuiKong_DIO(WPARAM wParam, LPARAM lParam)
 
 	m_Device_HuiKong_DIO.DealOnComm((unsigned char *)wParam,(int)lParam);
 	
-	CString s;
-	s.Format(_T("%d"),(int)lParam);
-	this->m_Device_HotLong_PCB[0].m_BarCode = s;
-	this->UpdateData(false);
 	
 	this->m_CheckPCB_Button_Set.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID]);
 	this->m_CheckPCB_Button_Plus.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID]);
@@ -2354,12 +2363,15 @@ LRESULT CHotLong_PCBDlg::OnComm_Device_HuiKong_DIO(WPARAM wParam, LPARAM lParam)
 
 LRESULT CHotLong_PCBDlg::OnComm_PROGRAM(WPARAM wParam, LPARAM lParam)
 {
-	int ID = 0;
-	m_Device_HotLong_PCB[ID].DealOnComm((unsigned char *)wParam,(int)lParam);
-	m_Pv[ID] = m_Device_HotLong_PCB[ID].m_Pv;
-	m_Sv[ID] = m_Device_HotLong_PCB[ID].m_Sv;
-	m_Pp[ID] = m_Device_HotLong_PCB[ID].m_Pp;
-	this->UpdateData(false);
+	this->m_ParaDlg.DisplayRec_hotLong(0,(unsigned char *)wParam,(int)lParam);
+	m_Device_HotLong_PCB[0].DealOnComm((unsigned char *)wParam,(int)lParam);
+	if(m_Device_HotLong_PCB[0].m_SubMode != 0)
+	{
+		m_Pv[0] = m_Device_HotLong_PCB[0].m_Pv;
+		m_Sv[0] = m_Device_HotLong_PCB[0].m_Sv;
+		m_Pp[0] = m_Device_HotLong_PCB[0].m_Pp;
+		this->UpdateData(false);
+	}
 
 	return 0;//DealOnComm_Device_HuiKong_DIO(wParam, lParam, this);
 
@@ -2369,6 +2381,7 @@ LRESULT CHotLong_PCBDlg::OnComm_PROGRAM(WPARAM wParam, LPARAM lParam)
 LRESULT CHotLong_PCBDlg::OnComm_PCB_1(WPARAM wParam, LPARAM lParam)
 {
 	int ID = 1;
+	this->m_ParaDlg.DisplayRec_hotLong(ID,(unsigned char *)wParam,(int)lParam);
 	m_Device_HotLong_PCB[ID].DealOnComm((unsigned char *)wParam,(int)lParam);
 	m_Pv[ID] = m_Device_HotLong_PCB[ID].m_Pv;
 	m_Sv[ID] = m_Device_HotLong_PCB[ID].m_Sv;
@@ -2382,6 +2395,7 @@ LRESULT CHotLong_PCBDlg::OnComm_PCB_1(WPARAM wParam, LPARAM lParam)
 LRESULT CHotLong_PCBDlg::OnComm_PCB_2(WPARAM wParam, LPARAM lParam)
 {
 	int ID = 2;
+	this->m_ParaDlg.DisplayRec_hotLong(ID,(unsigned char *)wParam,(int)lParam);
 	m_Device_HotLong_PCB[ID].DealOnComm((unsigned char *)wParam,(int)lParam);
 	m_Pv[ID] = m_Device_HotLong_PCB[ID].m_Pv;
 	m_Sv[ID] = m_Device_HotLong_PCB[ID].m_Sv;
@@ -2395,6 +2409,7 @@ LRESULT CHotLong_PCBDlg::OnComm_PCB_3(WPARAM wParam, LPARAM lParam)
 {
 
 	int ID = 3;
+	this->m_ParaDlg.DisplayRec_hotLong(ID,(unsigned char *)wParam,(int)lParam);
 	m_Device_HotLong_PCB[ID].DealOnComm((unsigned char *)wParam,(int)lParam);
 	m_Pv[ID] = m_Device_HotLong_PCB[ID].m_Pv;
 	m_Sv[ID] = m_Device_HotLong_PCB[ID].m_Sv;
@@ -2406,6 +2421,7 @@ LRESULT CHotLong_PCBDlg::OnComm_PCB_3(WPARAM wParam, LPARAM lParam)
 LRESULT CHotLong_PCBDlg::OnComm_PCB_4(WPARAM wParam, LPARAM lParam)
 {
 	int ID = 4;
+	this->m_ParaDlg.DisplayRec_hotLong(ID,(unsigned char *)wParam,(int)lParam);
 	m_Device_HotLong_PCB[ID].DealOnComm((unsigned char *)wParam,(int)lParam);
 	m_Pv[ID] = m_Device_HotLong_PCB[ID].m_Pv;
 	m_Sv[ID] = m_Device_HotLong_PCB[ID].m_Sv;
@@ -2417,6 +2433,7 @@ LRESULT CHotLong_PCBDlg::OnComm_PCB_4(WPARAM wParam, LPARAM lParam)
 LRESULT CHotLong_PCBDlg::OnComm_PCB_5(WPARAM wParam, LPARAM lParam)
 {
 	int ID = 5;
+	this->m_ParaDlg.DisplayRec_hotLong(ID,(unsigned char *)wParam,(int)lParam);
 	m_Device_HotLong_PCB[ID].DealOnComm((unsigned char *)wParam,(int)lParam);
 	m_Pv[ID] = m_Device_HotLong_PCB[ID].m_Pv;
 	m_Sv[ID] = m_Device_HotLong_PCB[ID].m_Sv;
@@ -2428,6 +2445,7 @@ LRESULT CHotLong_PCBDlg::OnComm_PCB_5(WPARAM wParam, LPARAM lParam)
 LRESULT CHotLong_PCBDlg::OnComm_PCB_6(WPARAM wParam, LPARAM lParam)
 {
 	int ID = 6;
+	this->m_ParaDlg.DisplayRec_hotLong(ID,(unsigned char *)wParam,(int)lParam);
 	m_Device_HotLong_PCB[ID].DealOnComm((unsigned char *)wParam,(int)lParam);
 	m_Pv[ID] = m_Device_HotLong_PCB[ID].m_Pv;
 	m_Sv[ID] = m_Device_HotLong_PCB[ID].m_Sv;
@@ -2440,6 +2458,7 @@ LRESULT CHotLong_PCBDlg::OnComm_PCB_6(WPARAM wParam, LPARAM lParam)
 LRESULT CHotLong_PCBDlg::OnComm_PCB_7(WPARAM wParam, LPARAM lParam)
 {
 	int ID = 7;
+	this->m_ParaDlg.DisplayRec_hotLong(ID,(unsigned char *)wParam,(int)lParam);
 	m_Device_HotLong_PCB[ID].DealOnComm((unsigned char *)wParam,(int)lParam);
 	m_Pv[ID] = m_Device_HotLong_PCB[ID].m_Pv;
 	m_Sv[ID] = m_Device_HotLong_PCB[ID].m_Sv;
@@ -2452,6 +2471,7 @@ LRESULT CHotLong_PCBDlg::OnComm_PCB_7(WPARAM wParam, LPARAM lParam)
 LRESULT CHotLong_PCBDlg::OnComm_PCB_8(WPARAM wParam, LPARAM lParam)
 {
 	int ID = 8;
+	this->m_ParaDlg.DisplayRec_hotLong(ID,(unsigned char *)wParam,(int)lParam);
 	m_Device_HotLong_PCB[ID].DealOnComm((unsigned char *)wParam,(int)lParam);
 	m_Pv[ID] = m_Device_HotLong_PCB[ID].m_Pv;
 	m_Sv[ID] = m_Device_HotLong_PCB[ID].m_Sv;
@@ -2783,7 +2803,7 @@ void CHotLong_PCBDlg::SetResult(int ID, bool Pass)
 	m_Device_HotLong_PCB[ID].m_SubMode = 0;
 }
 
-void CHotLong_PCBDlg::WorkMode_Program(void)
+void CHotLong_PCBDlg::WorkMode_Program_BIG_AMP(void)
 {
 	CTime cur = CTime::GetCurrentTime();
 	CTimeSpan span = cur - m_Device_HotLong_PCB[0].m_SubModeBeginTime;
@@ -3038,6 +3058,92 @@ void CHotLong_PCBDlg::WorkMode_Program(void)
 	}
 }
 
+void CHotLong_PCBDlg::WorkMode_Program_X90(void)
+{
+	CTime cur = CTime::GetCurrentTime();
+	CTimeSpan span = cur - m_Device_HotLong_PCB[0].m_SubModeBeginTime;
+	CString sCur,sSpan,msgLog;
+	int iSpan = span.GetTotalSeconds();
+
+	sCur = cur.Format(_T("%H:%M:%S "));
+	sSpan.Format(_T("  %d"),iSpan);
+	switch (m_Device_HotLong_PCB[0].m_SubMode)
+	{
+	case PROGRAM_KEY_MODE_IDLE:
+		m_Device_HotLong_PCB[0].m_EditMsg = _T("Í£Ö¹ÖÐ¡£¡£¡£");
+		this->UpdateData(false);
+		break;
+	case PROGRAM_KEY_MODE_NEEDLE_DOWN:
+	{
+		m_Device_HotLong_PCB[0].m_EditMsg = _T("²âÊÔÆô¶¯°´Å¥±ÕºÏ¡£¡£¡£");
+
+		if (iSpan > 3)
+		{
+			msgLog = sCur + _T("ÉÕÂ¼³ÌÐò");
+			this->m_ListMsg[0].InsertString(0, msgLog);
+			WriteLog(0, _T(""), m_Device_HotLong_PCB[0].m_BoxBeginTime, msgLog);
+			m_Device_HotLong_PCB[0].m_SubMode++;
+			m_Device_HotLong_PCB[0].m_SubModeBeginTime = CTime::GetCurrentTime();
+			SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID, true);
+		}
+		else
+		{
+			this->UpdateData(false);
+		}
+		m_Device_HotLong_PCB[0].m_EditMsg += sSpan;
+		this->UpdateData(false);
+	}
+	break;
+	case PROGRAM_KEY_MODE_PROGRAM:
+	{
+		m_Device_HotLong_PCB[0].m_EditMsg = _T("³ÌÐòÉÕÂ¼...");
+
+		if (iSpan > 20)
+		{
+			 
+			m_Device_HotLong_PCB[0].m_EditMsg = _T("³ÌÐòÉÕÂ¼Ê§°Ü");
+			msgLog = sCur + m_Device_HotLong_PCB[0].m_EditMsg;
+			this->m_ListMsg[0].InsertString(0, msgLog);
+			WriteLog(0, _T(""), m_Device_HotLong_PCB[0].m_BoxBeginTime, msgLog);
+			this->SetResult_Program(false);
+			this->UpdateData(false);
+			SetResult_Program(false);
+		}
+		else if (iSpan > 2)
+		{
+			
+			CString msg;
+			this->m_Edit_Degree.GetWindowTextW(msg);
+			if (m_Pv[0] != 0 || m_Sv[0] != 0)
+			{
+				
+				if((m_Led_Heat.Compare(_T("ºìÉ«")) == 0
+					|| m_Led_Heat.Compare(_T("ÂÌÉ«")) == 0)
+					&& 
+				(m_Led_Color.Compare(_T("ºìÉ«")) == 0
+					|| m_Led_Color.Compare(_T("ÂÌÉ«")) == 0))
+				{
+					m_Device_HotLong_PCB[0].m_EditMsg = _T("½¨Á¢485Í¨Ñ¶,") + m_Led_Heat + _T(",") + m_Led_Color;
+					msgLog = sCur + m_Device_HotLong_PCB[0].m_EditMsg;
+					this->m_ListMsg[0].InsertString(0, msgLog);
+					WriteLog(0, _T(""), m_Device_HotLong_PCB[0].m_BoxBeginTime, msgLog);
+
+					
+
+					this->SetResult_Program(true);
+				}
+			}
+		
+		}
+		m_Device_HotLong_PCB[0].m_EditMsg += sSpan;
+		this->UpdateData(false);
+		break;
+	}
+	break;
+	
+	}
+}
+
 void CHotLong_PCBDlg::BeepMode(void)
 {
 	if (!this->IsWindowVisible())
@@ -3104,7 +3210,7 @@ void CHotLong_PCBDlg::WorkMode_X90(int ID)
 	CString msg;
 	if (ID == 0)
 	{
-		WorkMode_Program();
+		WorkMode_Program_X90();
 	}
 	else if (ID >= 1 && ID <= 8)
 	{
@@ -3139,7 +3245,7 @@ void CHotLong_PCBDlg::WorkMode_X90(int ID)
 			break;
 		case 2:
 			span = cur - m_Device_HotLong_PCB[ID].m_SubModeBeginTime;
-			s.Format(_T("µÈ´ý2·ÖÖÓ£¬ÎÂ¶È·¶Î§:80--120£¬%02d:%02d"),span.GetMinutes(),span.GetSeconds());
+			s.Format(_T("µÈ´ý2·ÖÖÓ£¬ÎÂ¶È:80--120£¬%02d:%02d"),span.GetMinutes(),span.GetSeconds());
 			m_Device_HotLong_PCB[ID].m_EditMsg = s;
 			this->UpdateData(false);
 			if (span.GetTotalSeconds() > 120)
@@ -3159,13 +3265,18 @@ void CHotLong_PCBDlg::WorkMode_X90(int ID)
 			break;
 		case 3:
 			span = cur - m_Device_HotLong_PCB[ID].m_SubModeBeginTime;
-			s.Format(_T("ºãÎÂ2·ÖÖÓ£¬ÎÂ¶È·¶Î§:100--100£¬%02d:%02d"), span.GetMinutes(), span.GetSeconds());
+			s.Format(_T("ºãÎÂ2·ÖÖÓ£¬ÎÂ¶È:100--100£¬%02d:%02d"), span.GetMinutes(), span.GetSeconds());
 			m_Device_HotLong_PCB[ID].m_EditMsg = s;
 			this->UpdateData(false);
 			span = cur - m_Device_HotLong_PCB[ID].m_SubModeBeginTime;
 			if (span.GetTotalSeconds() > 120)
 			{
 				SetSv(ID-1, 90);
+				if(m_ConfigData.m_Pcb_Type == PCB_TYPE_X90
+				|| m_ConfigData.m_Pcb_Type == PCB_TYPE_X90_NO_BARCODE)
+				{
+					m_Device_HotLong_PCB[ID].SetSleepMode(true);
+				}
 				m_Device_HotLong_PCB[ID].m_SubModeBeginTime = cur;
 				m_Device_HotLong_PCB[ID].m_SubMode ++;
 				m_ListMsg[ID].InsertString(0, sCur + _T("2·ÖÖÓ½µµ½92¡ã"));
@@ -3209,7 +3320,7 @@ void CHotLong_PCBDlg::WorkMode_BIG_AMP(int ID)
 	CString msg;
 	if (ID == 0)
 	{
-		WorkMode_Program();
+		WorkMode_Program_BIG_AMP();
 	}
 	else if (ID >= 1 && ID <= 8)
 	{
@@ -3244,7 +3355,7 @@ void CHotLong_PCBDlg::WorkMode_BIG_AMP(int ID)
 			break;
 		case 2:
 			span = cur - m_Device_HotLong_PCB[ID].m_SubModeBeginTime;
-			s.Format(_T("µÈ´ý2·ÖÖÓ£¬ÎÂ¶È·¶Î§:80--120£¬%02d:%02d"),span.GetMinutes(),span.GetSeconds());
+			s.Format(_T("µÈ´ý2·ÖÖÓ£¬ÎÂ¶È:80--120£¬%02d:%02d"),span.GetMinutes(),span.GetSeconds());
 			m_Device_HotLong_PCB[ID].m_EditMsg = s;
 			this->UpdateData(false);
 			if (span.GetTotalSeconds() > 120)
@@ -3264,7 +3375,7 @@ void CHotLong_PCBDlg::WorkMode_BIG_AMP(int ID)
 			break;
 		case 3:
 			span = cur - m_Device_HotLong_PCB[ID].m_SubModeBeginTime;
-			s.Format(_T("ºãÎÂ2·ÖÖÓ£¬ÎÂ¶È·¶Î§:99--101£¬%02d:%02d"), span.GetMinutes(), span.GetSeconds());
+			s.Format(_T("ºãÎÂ2·ÖÖÓ£¬ÎÂ¶È:99--101£¬%02d:%02d"), span.GetMinutes(), span.GetSeconds());
 			m_Device_HotLong_PCB[ID].m_EditMsg = s;
 			this->UpdateData(false);
 			span = cur - m_Device_HotLong_PCB[ID].m_SubModeBeginTime;
@@ -3344,6 +3455,7 @@ void CHotLong_PCBDlg::OnEnSetFocusEditBarcode_8()
 void CHotLong_PCBDlg::OnBnClickedButtonProgramStart()
 {
 	//SetResult_Program(true);
+
 	ClickedButtonStart(0);
 	//StartVideo();
 	
@@ -3579,39 +3691,84 @@ void CHotLong_PCBDlg::ClickedButtonStart(int ButtonID)
 	}
 	if (ButtonID == 0)
 	{
-		switch (m_Device_HotLong_PCB[ButtonID].m_SubMode)
+		if(m_ConfigData.m_Pcb_Type == PCB_TYPE_BIG_AMP
+			|| m_ConfigData.m_Pcb_Type == PCB_TYPE_BIG_AMP_NO_BARCODE)
 		{
-		case 0:
-			m_Device_HotLong_PCB[ButtonID].m_BoxBeginTime = tm;
-			this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID, false);
-			this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID, false);
-			this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID, false);
-			this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID, false);
-			this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_TEST_NEEDLE_ID, true);
-			m_Device_HotLong_PCB[ButtonID].m_SubModeBeginTime = tm;
-			m_Device_HotLong_PCB[ButtonID].m_Edit_Result.SetWindowTextW(_T(""));
-			m_Device_HotLong_PCB[ButtonID].m_Edit_Result.SetBackColor(RGB(0xFF, 0xFF, 0));
+			switch (m_Device_HotLong_PCB[ButtonID].m_SubMode)
+			{
+			case 0:
+				m_Device_HotLong_PCB[ButtonID].m_BoxBeginTime = tm;
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_TEST_NEEDLE_ID, true);
+				m_Device_HotLong_PCB[ButtonID].m_SubModeBeginTime = tm;
+				m_Device_HotLong_PCB[ButtonID].m_Edit_Result.SetWindowTextW(_T(""));
+				m_Device_HotLong_PCB[ButtonID].m_Edit_Result.SetBackColor(RGB(0xFF, 0xFF, 0));
 
-			this->m_ListMsg[0].ResetContent();
-			msg = s + _T("²âÊÔ¿ªÊ¼");
-			m_ListMsg[ButtonID].InsertString(0, msg);
-			WriteLog(ButtonID, _T(""), m_Device_HotLong_PCB[ButtonID].m_BoxBeginTime, msg);
-			msg = s + _T("²âÊÔÌ½Õë°´¼üÏÂÑ¹");
-			this->m_ListMsg[0].InsertString(0,msg );
-			WriteLog(ButtonID, _T(""), m_Device_HotLong_PCB[ButtonID].m_BoxBeginTime, msg);
-			this->UpdateData(false);
-			m_Device_HotLong_PCB[ButtonID].m_SubMode = 1;
-			break;
-		default:
-			this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID, false);
-			this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID, false);
-			this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_TEST_NEEDLE_ID, false);
-			this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID, false);
-			this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID, false);
-			m_ListMsg[ButtonID].InsertString(0, s + _T("¶Ïµç"));
-			m_ListMsg[ButtonID].InsertString(0, s + _T("²âÊÔ½áÊø"));
-			m_Device_HotLong_PCB[ButtonID].m_SubMode = 0;
-			break;
+				this->m_ListMsg[0].ResetContent();
+				msg = s + _T("²âÊÔ¿ªÊ¼");
+				m_ListMsg[ButtonID].InsertString(0, msg);
+				WriteLog(ButtonID, _T(""), m_Device_HotLong_PCB[ButtonID].m_BoxBeginTime, msg);
+				msg = s + _T("²âÊÔÌ½Õë°´¼üÏÂÑ¹");
+				this->m_ListMsg[0].InsertString(0,msg );
+				WriteLog(ButtonID, _T(""), m_Device_HotLong_PCB[ButtonID].m_BoxBeginTime, msg);
+				this->UpdateData(false);
+				m_Device_HotLong_PCB[ButtonID].m_SubMode = 1;
+				break;
+			default:
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_TEST_NEEDLE_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID, false);
+				m_ListMsg[ButtonID].InsertString(0, s + _T("¶Ïµç"));
+				m_ListMsg[ButtonID].InsertString(0, s + _T("²âÊÔ½áÊø"));
+				m_Device_HotLong_PCB[ButtonID].m_SubMode = 0;
+				break;
+			}
+		}
+		else if(m_ConfigData.m_Pcb_Type == PCB_TYPE_X90
+			|| m_ConfigData.m_Pcb_Type == PCB_TYPE_X90_NO_BARCODE)
+		{
+			switch (m_Device_HotLong_PCB[ButtonID].m_SubMode)
+			{
+			case 0:
+				m_Device_HotLong_PCB[ButtonID].m_BoxBeginTime = tm;
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID, true);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_TEST_NEEDLE_ID, false);
+				m_Device_HotLong_PCB[ButtonID].m_SubModeBeginTime = tm;
+				m_Device_HotLong_PCB[ButtonID].m_Edit_Result.SetWindowTextW(_T(""));
+				m_Device_HotLong_PCB[ButtonID].m_Edit_Result.SetBackColor(RGB(0xFF, 0xFF, 0));
+				m_Device_HotLong_PCB[ButtonID].m_Pv = 0;
+				m_Device_HotLong_PCB[ButtonID].m_Sv = 0;
+				m_Pv[0] = 0;
+				m_Sv[0] = 0;
+				this->m_ListMsg[0].ResetContent();
+				msg = s + _T("²âÊÔ¿ªÊ¼");
+				m_ListMsg[ButtonID].InsertString(0, msg);
+				WriteLog(ButtonID, _T(""), m_Device_HotLong_PCB[ButtonID].m_BoxBeginTime, msg);
+				msg = s + _T("²âÊÔÆô¶¯°´¼ü±ÕºÏ");
+				this->m_ListMsg[0].InsertString(0,msg );
+				WriteLog(ButtonID, _T(""), m_Device_HotLong_PCB[ButtonID].m_BoxBeginTime, msg);
+				this->UpdateData(false);
+				m_Device_HotLong_PCB[ButtonID].m_SubMode = 1;
+				break;
+			default:
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_TEST_NEEDLE_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID, false);
+				this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID, false);
+				m_ListMsg[ButtonID].InsertString(0, s + _T("¶Ïµç"));
+				m_ListMsg[ButtonID].InsertString(0, s + _T("²âÊÔ½áÊø"));
+				m_Device_HotLong_PCB[ButtonID].m_SubMode = 0;
+				break;
+			}
 		}
 		return ;
 	}
@@ -3660,11 +3817,13 @@ void CHotLong_PCBDlg::ClickedButtonStart(int ButtonID)
 		m_Device_HotLong_PCB[ButtonID].m_Edit_Result.SetWindowTextW( _T(""));
 		m_Device_HotLong_PCB[ButtonID].m_Edit_Result.SetBackColor(RGB(0xFF, 0xFF, 0));
 		SetSv(ButtonID - 1, 100);
+
 		if(m_ConfigData.m_Pcb_Type == PCB_TYPE_X90
 			|| m_ConfigData.m_Pcb_Type == PCB_TYPE_X90_NO_BARCODE)
 		{
 			m_Device_HotLong_PCB[ButtonID].SetSleepMode(false);
 		}
+		
 		m_ListMsg[ButtonID].InsertString(0, s + _T("7·ÖÖÓÉýµ½95¡ã"));
 		this->UpdateData(false);
 	    m_Device_HotLong_PCB[ButtonID].m_SubMode = 1;
@@ -3966,9 +4125,11 @@ void CHotLong_PCBDlg::TimerSend(int CommNr)
 		return;
 	}
 
+	
+
 	m_Device_HotLong_PCB[CommNr].SetBaudrate(m_Device_HotLong_PCB[CommNr].m_Comm);
 
-	if(m_Device_HotLong_PCB[CommNr].SendWaitCmd(&m_Device_HuiKong_DIO)  == 0 )
+	if(m_Device_HotLong_PCB[CommNr].SendWaitCmd(&m_Device_HotLong_PCB[CommNr])  == 0 )
 	{
 		m_Device_HotLong_PCB[CommNr].ReadData();
 	}
@@ -3977,17 +4138,23 @@ void CHotLong_PCBDlg::TimerSend(int CommNr)
 
 	CTime cur = CTime::GetCurrentTime();
 	CTimeSpan ts = cur - m_Device_HotLong_PCB[CommNr].m_Comm->m_LastRecTime;
-	if(ts.GetTotalSeconds() >= 10)
+	if(m_Device_HotLong_PCB[CommNr].m_SubMode == 0)
 	{
-		CString s;
-		s = cur.Format(_T("%H:%M:%S"));
-		s += _T("  ÏßÂ·°å ÎÞÏìÓ¦");
-		
-		m_ListMsg[CommNr].AddString(s);
-		
-		m_Device_HotLong_PCB[CommNr].m_Comm->m_LastRecTime = CTime::GetCurrentTime();
+	 	m_Device_HotLong_PCB[CommNr].m_Comm->m_LastRecTime = CTime::GetCurrentTime();
 	}
-	
+	else
+	{
+		if(ts.GetTotalSeconds() >= 10)
+		{
+			CString s;
+			s = cur.Format(_T("%H:%M:%S"));
+			s += _T("  ÏßÂ·°å ÎÞÏìÓ¦");
+			
+			m_ListMsg[CommNr].AddString(s);
+			
+			m_Device_HotLong_PCB[CommNr].m_Comm->m_LastRecTime = CTime::GetCurrentTime();
+		}
+	}
 }
 
 void CHotLong_PCBDlg::OnBnClickedCancel()
@@ -5493,3 +5660,4 @@ void CHotLong_PCBDlg::OnEnSetfocusEditLedColorBottom()
 		w->SetWindowTextW(dlg.m_Input);
 	}
 }
+

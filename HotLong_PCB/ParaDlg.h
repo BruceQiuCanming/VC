@@ -57,7 +57,7 @@ public:
 
 	void DisplayRec_PLC(unsigned char *Data,int Date_Len);
 	void CParaDlg::DisplayText(CString *text,unsigned int counts ,unsigned char *data,int date_len);
-	void DisplayRec_hotLong(int ID,unsigned int counts ,unsigned char *data,int date_len);
+	void DisplayRec_hotLong(int ID,unsigned char *data,int date_len);
 
 
 // 对话框数据

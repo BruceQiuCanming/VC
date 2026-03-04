@@ -15,6 +15,7 @@
 #define IDC_STATIC_SCREEN               1000
 #define IDC_LIST1                       1001
 #define IDC_BUTTON1                     1002
+#define IDC_BUTTON_PHOTO                1002
 #define IDC_STATIC_POWER_1              1003
 #define IDC_STATIC_POWER_2              1004
 #define IDC_STATIC_POWER_3              1005
@@ -314,12 +315,17 @@
 #define IDC_STATIC_PP_8                 1209
 #define IDC_STATIC_SCANNER              1210
 #define IDC_STATIC_PLC                  1210
+#define IDC_EDIT_Pv_0                   1210
 #define IDC_COMBO_SCANNER_COMM          1211
 #define IDC_COMBO_PLC_COMM              1211
 #define IDC_STATIC_PP_9                 1211
+#define IDC_EDIT_Sv_9                   1211
+#define IDC_EDIT_Sv_0                   1211
 #define IDC_STATIC_CAMERA               1212
+#define IDC_STATIC_PV_0                 1212
 #define IDC_COMBO_SCANNER_COMM2         1213
 #define IDC_COMBO_CAMERA                1213
+#define IDC_STATIC_SV_0                 1213
 #define IDC_STATIC_PROGRAM              1214
 #define IDC_COMBO_PROGRAM_COMM          1215
 #define IDC_STATIC_AGING_POWER_1        1216
