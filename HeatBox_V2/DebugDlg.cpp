@@ -17,6 +17,7 @@
 #include "ProgramDlg.h"
 
 #include "afxinet.h"
+#include "son.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -402,6 +403,8 @@ void CDebugDlg::OnButton2()
 
 void CDebugDlg::OnButton_PID() 
 {
+	
+
 	// TODO: Add your control notification handler code here
 		CEdit *edit;
 		if(::G_NormalConfigPara[m_BoxNr].BoxType == ::BOX_TEMP2_10IN_12OUT)
@@ -482,7 +485,11 @@ void CDebugDlg::OnButton6()
 void CDebugDlg::OnButtonSetPID() 
 {
 	// TODO: Add your control notification handler code here
+    Son son;
+	
+	//son.say();
 
+	son.mydo();
 
 	char para[100];
 	memset(para,0,sizeof(para));

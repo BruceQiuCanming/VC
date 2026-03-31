@@ -1308,6 +1308,210 @@
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
+		<Configuration
+			Name="Debug 东莞贝特|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			UseOfMFC="1"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Debug/HeatBox.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="D:\work\VC\HeatBox_V2;D:\work\public_c;&quot;D:\Program Files\Microsoft Speech SDK 5.1\Include&quot;;&quot;D:\Program Files\Microsoft Speech SDK 5.1\Lib\i386&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;MAX_LED_NR_128;_HeatBox;_DONGGUAN_BETTER"
+				GeneratePreprocessedFile="0"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough="stdAfx.h"
+				PrecompiledHeaderFile=".\Debug/HeatBox.pch"
+				AssemblerListingLocation=".\Debug/"
+				ObjectFile=".\Debug/"
+				ProgramDataBaseFileName=".\Debug/"
+				BrowseInformation="1"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="2052"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/mapinfo:exports "
+				AdditionalDependencies="PSAPI.LIB"
+				OutputFile="Debug_128/热保护器测试安装程序_东莞贝特_MES.exe"
+				LinkIncremental="2"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Microsoft Speech SDK 5.1\Lib\i386&quot;"
+				UACExecutionLevel="2"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile=".\Debug/HeatBox_HV_128.pdb"
+				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+				SuppressStartupBanner="true"
+				OutputFile=".\Debug/HeatBox.bsc"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release 东莞贝特|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			UseOfMFC="1"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Release/HeatBox.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="D:\work\VC\HeatBox_V2;D:\work\public_c"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;MAX_LED_NR_128;_HeatBox;_DONGGUAN_BETTER"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough="stdafx.h"
+				PrecompiledHeaderFile=".\Release/HeatBox.pch"
+				AssemblerListingLocation=".\Release/"
+				ObjectFile=".\Release/"
+				ProgramDataBaseFileName=".\Release/"
+				BrowseInformation="1"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="2052"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/mapinfo:exports "
+				AdditionalDependencies="PSAPI.LIB"
+				OutputFile="Release_128/热保护器测试安装程序_东莞贝特_MES.exe"
+				LinkIncremental="1"
+				SuppressStartupBanner="false"
+				UACExecutionLevel="2"
+				ProgramDatabaseFile=".\Release/HeatBox2CPU_HV_128.pdb"
+				GenerateMapFile="true"
+				MapFileName=".\Release/HeatBox2CPU_HV_128.map"
+				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+				SuppressStartupBanner="true"
+				OutputFile=".\Release/HeatBox.bsc"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
 	</Configurations>
 	<References>
 	</References>
@@ -1417,6 +1621,22 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug XinQiNeng|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1539,6 +1759,22 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="CreateModifyParaDlg.cpp"
@@ -1647,6 +1883,22 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\public_c\CurveDlg.cpp"
@@ -1661,7 +1913,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DongguanBetterMesMsgDlg.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\explorer1.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Father.cpp"
 				>
 			</File>
 			<File
@@ -1783,6 +2043,22 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="HeatBox.rc"
@@ -1885,6 +2161,22 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug XinQiNeng|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
 					>
 					<Tool
 						Name="VCResourceCompilerTool"
@@ -1999,9 +2291,29 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\HttpTools.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\KeyBoardDlg.cpp"
 				>
 			</File>
 			<File
@@ -2115,6 +2427,22 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="ProductTempBar.cpp"
@@ -2217,6 +2545,22 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug XinQiNeng|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2335,6 +2679,22 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="RecordViewDlg.cpp"
@@ -2443,6 +2803,26 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\Son.cpp"
+				>
 			</File>
 			<File
 				RelativePath="StdAfx.cpp"
@@ -2564,6 +2944,24 @@
 						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="1"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="SwitchDlg.cpp"
@@ -2666,6 +3064,22 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug XinQiNeng|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2780,6 +3194,22 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="TakeoutPage.cpp"
@@ -2882,6 +3312,22 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug XinQiNeng|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2996,6 +3442,22 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release 东莞贝特|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -3035,7 +3497,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DongguanBetterMesMsgDlg.h"
+				>
+			</File>
+			<File
 				RelativePath=".\explorer1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Father.h"
 				>
 			</File>
 			<File
@@ -3052,6 +3522,10 @@
 			</File>
 			<File
 				RelativePath="HeatBoxDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\KeyBoardDlg.h"
 				>
 			</File>
 			<File
@@ -3080,6 +3554,10 @@
 			</File>
 			<File
 				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Son.h"
 				>
 			</File>
 			<File
@@ -3345,15 +3823,11 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\icc_avr_new\BiMetal_V2\bin\BiMetal24_V2.hex"
+			RelativePath="..\..\ICC_AVR_NEW\BiMetal_V2\bin\Hex\BiMetal24_V3_A.hex"
 			>
 		</File>
 		<File
-			RelativePath="..\..\icc_avr_new\BiMetal_V2\bin\Hex\BiMetal24_V2.hex"
-			>
-		</File>
-		<File
-			RelativePath="..\..\icc_avr_new\BiMetal_V2\bin\Hex\BiMetal24_V3.hex"
+			RelativePath="..\..\ICC_AVR_NEW\BiMetal_V2\bin\Hex\BiMetal24_V3_B.hex"
 			>
 		</File>
 		<File
@@ -3401,19 +3875,19 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\icc_avr_new\NTC\bin\hex\NTC_32.hex"
-			>
-		</File>
-		<File
 			RelativePath="..\..\icc_avr_new\NTC\NTC RES TEST\bin\hex\NTC_32.hex"
 			>
 		</File>
 		<File
-			RelativePath="..\..\icc_avr_new\NTC\NTC RES TEST\bin\hex\NTC_64.hex"
+			RelativePath="..\..\icc_avr_new\NTC\bin\hex\NTC_32.hex"
 			>
 		</File>
 		<File
 			RelativePath="..\..\icc_avr_new\NTC\bin\hex\NTC_64.hex"
+			>
+		</File>
+		<File
+			RelativePath="..\..\icc_avr_new\NTC\NTC RES TEST\bin\hex\NTC_64.hex"
 			>
 		</File>
 		<File

@@ -996,16 +996,6 @@ extern CSorterPlcDlg	G_SorterPlcDlg;
 void CSwitchDlg::OnCheckStartTest() 
 {
 
-	//MyAfxMessageBox(_T("123"),0);
-
-//	::G_SorterPlcDlg.DoModal();
-
-//	return;
-
-//	this->m_WorkMode.SaveTestRecord(0);
-//	return;
-
-
 	m_WorkMode.m_SwitchConfigPara = this->m_SwitchConfigPara.para;
 	m_WorkMode.OnClickStartButton( this,m_BoxNr,m_CurTemp,m_SwitchConfigPara.para);
 

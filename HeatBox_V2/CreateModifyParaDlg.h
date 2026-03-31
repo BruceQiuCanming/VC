@@ -98,6 +98,7 @@ public:
 	double m_LowLevelAvrSpanPlus;
 	double m_LowLevelCloseAvrSpanMinus;
 	double m_LowLevelCLoseAvrSpanPlus;
+	afx_msg void OnEnChangeEditParaName();
 };
 
 //{{AFX_INSERT_LOCATION}}

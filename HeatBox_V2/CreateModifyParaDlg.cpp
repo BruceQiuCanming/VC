@@ -7,7 +7,7 @@
 //#include "ParaRecordset.h"
 #include "InputDlg.h"
 #include "shlwapi.h"
-
+#include "keyboarddlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -132,6 +132,7 @@ BEGIN_MESSAGE_MAP(CCreateModifyParaDlg, CDialog)
 	ON_EN_SETFOCUS(IDC_EDIT_PARA_NAME, &CCreateModifyParaDlg::OnEnSetfocusEditParaName)
 	ON_EN_KILLFOCUS(IDC_EDIT_PARA_NAME, &CCreateModifyParaDlg::OnEnKillfocusEditParaName)
 	ON_EN_CHANGE(IDC_EDIT_LOW_LEVEL_SPAN_PLUS5, &CCreateModifyParaDlg::OnEnChangeEditLowLevelSpanPlus5)
+	ON_EN_CHANGE(IDC_EDIT_PARA_NAME, &CCreateModifyParaDlg::OnEnChangeEditParaName)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1142,8 +1143,18 @@ void CCreateModifyParaDlg::OnEnSetfocusEditParaName()
 {
 	// TODO: 在此添加控件通知处理程序代码
 
+	CWnd *w = this->GetDlgItem(IDC_SAVE);
+	w->SetFocus();
+
+	CKeyBoardDlg dlg;
+
+	if(dlg.DoModal() == IDOK)
+	{
+		this->m_ParaName = dlg.m_Input;
+		this->UpdateData(false);
+	}
 //	WinExec("osk.exe",SW_NORMAL);
-	ShellExecute(GetSafeHwnd(), NULL, _T("osk.exe"),NULL,NULL,SW_NORMAL);
+//	ShellExecute(GetSafeHwnd(), NULL, _T("osk.exe"),NULL,NULL,SW_NORMAL);
 //	ShellExecute(GetSafeHwnd(), _T("open"), _T("osk.exe"), _T(""),_T(""),SW_SHOW);
 
 }
@@ -1161,6 +1172,16 @@ void CCreateModifyParaDlg::OnEnKillfocusEditParaName()
 }
 
 void CCreateModifyParaDlg::OnEnChangeEditLowLevelSpanPlus5()
+{
+	// TODO:  如果该控件是 RICHEDIT 控件，则它将不会
+	// 发送该通知，除非重写 CDialog::OnInitDialog()
+	// 函数并调用 CRichEditCtrl().SetEventMask()，
+	// 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+	// TODO:  在此添加控件通知处理程序代码
+}
+
+void CCreateModifyParaDlg::OnEnChangeEditParaName()
 {
 	// TODO:  如果该控件是 RICHEDIT 控件，则它将不会
 	// 发送该通知，除非重写 CDialog::OnInitDialog()

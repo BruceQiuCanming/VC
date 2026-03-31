@@ -1018,15 +1018,6 @@ BEGIN
     CONTROL         "静态",IDC_STATIC_MSG,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,7,7,250,81,WS_EX_STATICEDGE
 END
 
-IDD_DIALOG1 DIALOGEX 0, 0, 316, 182
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Dialog"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    DEFPUSHBUTTON   "确定",IDOK,205,161,50,14
-    PUSHBUTTON      "取消",IDCANCEL,259,161,50,14
-END
-
 IDD_DIALOG_Program DIALOGEX 0, 0, 164, 130
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "线路板升级"
@@ -1040,6 +1031,69 @@ BEGIN
     COMBOBOX        IDC_COMBO_TM7705_OSC,58,36,85,71,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     LTEXT           "接口板类型",IDC_STATIC,22,55,33,8
     COMBOBOX        IDC_COMBO_INTERFACE_BOARD_TYPE,58,54,85,71,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+END
+
+IDD_DIALOG_KEYBOARD DIALOGEX 0, 0, 316, 126
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "大键盘"
+FONT 16, "黑体", 0, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "确认",IDOK,87,111,50,14
+    PUSHBUTTON      "取消",IDCANCEL,164,112,50,14
+    EDITTEXT        IDC_EDIT_INPUT,0,0,304,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "1",IDC_BUTTON_1,0,13,26,12
+    PUSHBUTTON      "2",IDC_BUTTON_2,30,13,26,12
+    PUSHBUTTON      "3",IDC_BUTTON_3,60,13,26,12
+    PUSHBUTTON      "4",IDC_BUTTON_4,90,13,26,12
+    PUSHBUTTON      "5",IDC_BUTTON_5,120,13,26,12
+    PUSHBUTTON      "6",IDC_BUTTON_6,150,13,26,12
+    PUSHBUTTON      "7",IDC_BUTTON_7,180,13,26,12
+    PUSHBUTTON      "8",IDC_BUTTON_8,210,13,26,12
+    PUSHBUTTON      "9",IDC_BUTTON_9,240,13,26,12
+    PUSHBUTTON      "0",IDC_BUTTON_0,270,13,26,12
+    PUSHBUTTON      ".",IDC_BUTTON_DOT,155,80,26,12
+    PUSHBUTTON      "清除",IDC_BUTTON_CLEAR,197,80,26,12
+    PUSHBUTTON      "+",IDC_BUTTON_PLUS,71,80,26,12
+    PUSHBUTTON      "A",IDC_BUTTON_A,0,28,26,12
+    PUSHBUTTON      "B",IDC_BUTTON_B,30,28,26,12
+    PUSHBUTTON      "C",IDC_BUTTON_C,60,28,26,12
+    PUSHBUTTON      "D",IDC_BUTTON_D,90,28,26,12
+    PUSHBUTTON      "E",IDC_BUTTON_E,120,28,26,12
+    PUSHBUTTON      "F",IDC_BUTTON_F,150,28,26,12
+    PUSHBUTTON      "G",IDC_BUTTON_G,180,28,26,12
+    PUSHBUTTON      "H",IDC_BUTTON_H,210,28,26,12
+    PUSHBUTTON      "I",IDC_BUTTON_I,240,28,26,12
+    PUSHBUTTON      "J",IDC_BUTTON_J,270,28,26,12
+    PUSHBUTTON      "K",IDC_BUTTON_K,0,43,26,12
+    PUSHBUTTON      "L",IDC_BUTTON_L,30,43,26,12
+    PUSHBUTTON      "M",IDC_BUTTON_M,60,43,26,12
+    PUSHBUTTON      "N",IDC_BUTTON_N,90,43,26,12
+    PUSHBUTTON      "O",IDC_BUTTON_O,120,43,26,12
+    PUSHBUTTON      "P",IDC_BUTTON_P,150,43,26,12
+    PUSHBUTTON      "Q",IDC_BUTTON_Q,180,43,26,12
+    PUSHBUTTON      "R",IDC_BUTTON_R,210,43,26,12
+    PUSHBUTTON      "S",IDC_BUTTON_S,240,43,26,12
+    PUSHBUTTON      "T",IDC_BUTTON_T,270,43,26,12
+    PUSHBUTTON      "U",IDC_BUTTON_U,0,61,26,12
+    PUSHBUTTON      "V",IDC_BUTTON_V,30,61,26,12
+    PUSHBUTTON      "W",IDC_BUTTON_W,60,61,26,12
+    PUSHBUTTON      "X",IDC_BUTTON_X,90,61,26,12
+    PUSHBUTTON      "Y",IDC_BUTTON_Y,120,61,26,12
+    PUSHBUTTON      "Z",IDC_BUTTON_Z,150,61,26,12
+    PUSHBUTTON      "-",IDC_BUTTON_MINUS,113,80,26,12
+END
+
+IDD_DIALOG_DONGGUAN_BETTER_MES_MESSAGE DIALOGEX 0, 0, 316, 182
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "东莞贝特 MES 设置页"
+FONT 14, "Microsoft Sans Serif", 400, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,205,161,50,14
+    PUSHBUTTON      "取消",IDCANCEL,259,161,50,14
+    LTEXT           "MES服务器IP:",IDC_STATIC,7,7,51,11,SS_CENTERIMAGE
+    CONTROL         "",IDC_IPADDRESS1,"SysIPAddress32",WS_TABSTOP,71,7,100,11
+    LTEXT           "TCP 端口号:",IDC_STATIC,7,26,51,11,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT1,71,24,100,12,ES_AUTOHSCROLL
 END
 
 
@@ -1504,20 +1558,25 @@ BEGIN
         BOTTOMMARGIN, 111
     END
 
-    IDD_DIALOG1, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 309
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 175
-    END
-
     IDD_DIALOG_Program, DIALOG
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 157
         TOPMARGIN, 7
         BOTTOMMARGIN, 123
+    END
+
+    IDD_DIALOG_KEYBOARD, DIALOG
+    BEGIN
+        RIGHTMARGIN, 304
+    END
+
+    IDD_DIALOG_DONGGUAN_BETTER_MES_MESSAGE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 175
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -1538,8 +1597,6 @@ IDR_NTC_32              HEX                     "..\\..\\icc_avr_new\\NTC\\NTC R
 IDR_NTC_64              HEX                     "..\\..\\icc_avr_new\\NTC\\NTC RES TEST\\bin\\hex\\NTC_64.hex"
 IDR_JIU_YANG_MEGA16_R75 HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\JIU_YANG_Mega16_R75.hex"
 IDR_JIU_YANG_MEGA32_R75 HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\JIU_YANG_Mege32_R75.hex"
-IDR_BIMETAL24_V2        HEX                     "..\\..\\icc_avr_new\\BiMetal_V2\\bin\\Hex\\BiMetal24_V2.hex"
-IDR_BIMETAL24_V3        HEX                     "..\\..\\icc_avr_new\\BiMetal_V2\\bin\\Hex\\BiMetal24_V3.hex"
 IDR_BIMETAL_V3_A        HEX                     "..\\..\\icc_avr_new\\BiMetal_V2\\bin\\Hex\\BiMetal_V3_A.hex"
 IDR_BIMETAL_V3_B        HEX                     "..\\..\\icc_avr_new\\BiMetal_V2\\bin\\Hex\\BiMetal_V3_B.hex"
 IDR_NTC_24_LED          HEX                     "..\\..\\icc_avr_new\\NTC\\NTC_24_RELAY\\bin\\hex\\NTC_24_LED.hex"
@@ -1555,6 +1612,8 @@ IDR_TPC_TempBoard_Mega16_8PT100_8SSR_HEX HEX                     "..\\..\\icc_av
 IDR_TPC_TEMPBOARD_MEGA16_R75 HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TPC_TempBoard_Mega16_R75.hex"
 IDR_TPC_TEMPBOARD_MEGA16_R75_GAIN_4 HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TPC_TempBoard_Mega16_R75_GAIN4.hex"
 IDR_TPC_TEMPBOARD_MEGA16_R82 HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TPC_TempBoard_Mega16_R82.hex"
+IDR_BIMETAL24_V3_A      HEX                     "D:\\work\\ICC_AVR_NEW\\BiMetal_V2\\bin\\Hex\\BiMetal24_V3_A.hex"
+IDR_BIMETAL24_V3_B      HEX                     "D:\\work\\ICC_AVR_NEW\\BiMetal_V2\\bin\\Hex\\BiMetal24_V3_B.hex"
 
 /////////////////////////////////////////////////////////////////////////////
 //
