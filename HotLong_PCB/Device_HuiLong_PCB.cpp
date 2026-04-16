@@ -27,35 +27,51 @@ void CDevice_HuiLong_PCB::DealOnComm(unsigned char *Data,int DataLen)
 
 	if (m_LastSendCmd.cmd == 0x03)
 	{
-		if (DataLen == sizeof(MODBUS_RS485_READ_ANSWER_WORD_3))
+		/*if (DataLen == sizeof(MODBUS_RS485_READ_ANSWER_WORD_3))
 		{
 			MODBUS_RS485_READ_ANSWER_WORD_3* Read_Answer_Word_3 = (MODBUS_RS485_READ_ANSWER_WORD_3*)Data;
-			CString s;
-			unsigned char* para = (unsigned char*)Read_Answer_Word_3->data;
-			unsigned short v;
-			v = para[0] * 256 + para[1];
-			m_Pv = v;
+			if(Read_Answer_Word_3->head.RS485_Addr == 0xFE)
+			{
+				CString s;
+				unsigned char* para = (unsigned char*)Read_Answer_Word_3->data;
+				unsigned short v;
+				v = para[0] * 256 + para[1];
+				m_Pv = v;
 
-			v = para[4] * 256 + para[5];
-			m_Sv = v;
+				v = para[4] * 256 + para[5];
+				m_Sv = v;
+			}
 
 	
-		}
+		}*/
 
 		if (DataLen == sizeof(MODBUS_RS485_READ_ANSWER_WORD_18))
 		{
+			
 			MODBUS_RS485_READ_ANSWER_WORD_18* Read_Answer_Word_18 = (MODBUS_RS485_READ_ANSWER_WORD_18*)Data;
-			CString s;
-			unsigned char* para = (unsigned char*)Read_Answer_Word_18->data;
-			unsigned short v;
-			v = para[2*0] * 256 + para[2*0+1];
-			m_Pv = v;
+			if(Read_Answer_Word_18->head.RS485_Addr == 0xFE)
+			{
+				CString s;
+				unsigned char* para = (unsigned char*)Read_Answer_Word_18->data;
+				unsigned short v;
+				v = para[2*0] * 256 + para[2*0+1];
+				if(v >= 0 && v < 200)
+				{
+					m_Pv = v;
+				}
 
-			v = para[2*2] * 256 + para[2*2+1];
-			m_Sv = v;
-
-			v = para[2*16] * 256 + para[2*16+1];
-			m_Pp = v;
+				v = para[2*2] * 256 + para[2*2+1];
+				if(v >= 0 && v < 200)
+				{
+					m_Sv = v;
+				}
+				v = para[2*16] * 256 + para[2*16+1];
+				if(v >= 0 && v < 200)
+				{
+					m_Pp = v;
+				}
+				
+			}
 	
 		}
 	}

@@ -140,7 +140,7 @@ public:
 	//double			m_CurTemp[MAX_HEAT_BOX][4];
 	CFloatArray		m_LastCurTemp[MAX_HEAT_BOX][4];
 
-	CTabCtrl		m_Tab[10];	//属性页不可变
+	CTabCtrl		m_Tab[MAX_HEAT_BOX*2];	//属性页不可变
 
 	CSorterPlcDlg	m_SorterPlcDlg;
 

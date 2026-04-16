@@ -18,6 +18,10 @@
 #include "DlgInfomation.h"
 #include "SorterPlcDlg.h"
 #include "HttpTools.h"
+#include "DongguanBetterMesMsgDlg.h"
+#include "atlstr.h"
+#include "string.h"
+#include <atlimage.h>
 
 #pragma  comment(lib,"shlwapi.lib")
 
@@ -298,11 +302,11 @@ BOOL CSwitchDlg::OnInitDialog()
 
 
 	CTimeSpan span(0,0,1,0);
-	m_MeterAnswerTime = CTime::GetCurrentTime();
-	m_MeterAnswerTime -= span;
-	m_LedAnswerTime[0]   = CTime::GetCurrentTime();
+	G_Meter[m_BoxNr].m_MeterAnswerTime = CTime::GetCurrentTime();
+	G_Meter[m_BoxNr].m_MeterAnswerTime -= span;
+	G_Meter[m_BoxNr].m_LedAnswerTime[0]   = CTime::GetCurrentTime();
 
-	m_LedAnswerTime[0]  -= span;
+	G_Meter[m_BoxNr].m_LedAnswerTime[0]  -= span;
 
 	
 	
@@ -964,6 +968,10 @@ void CSwitchDlg::AutoTestStep_StepCool(void)
 void CSwitchDlg::OnTimer(UINT nIDEvent) 
 {
 
+//	G_Meter[m_BoxNr].DrawMeter(m_BoxNr);
+
+//	this->RedrawWindow();
+
 	m_WorkMode.Timer(this,m_BoxNr,m_CurTemp,m_SwitchConfigPara.para);   
 
 	CDialog::OnTimer(nIDEvent);
@@ -993,8 +1001,67 @@ void CSwitchDlg::SaveCurve(void)
 }
 
 extern CSorterPlcDlg	G_SorterPlcDlg;
+
+
+
+#ifdef _DEBUG
+
+#endif
+
 void CSwitchDlg::OnCheckStartTest() 
 {
+	//PrintDeliveryNote();
+	//return;
+	/*
+#ifdef _DONGGUAN_BETTER
+	RECORD record;
+
+	memset(&record,0,sizeof(record));
+
+	for(int i = 0; i < 10; i++)
+	{
+		record.TestResult[i].IsUsed		= true;
+		record.TestResult[i].IsOpenned	= true;
+		record.TestResult[i].OpenTemp	= 100.0f + i;
+		record.TestResult[i].IsClosed   = true;
+		record.TestResult[i].CloseTemp  = 60.0f  + i;
+	}
+
+	for(int i = 20; i < 30; i++)
+	{
+		record.TestResult[i].IsUsed		= true;
+		record.TestResult[i].IsOpenned	= true;
+		record.TestResult[i].OpenTemp	= 100.0f + i;
+		record.TestResult[i].IsClosed   = false;
+		record.TestResult[i].CloseTemp  = 60.0f  + i;
+	}
+
+	for(int i = 50; i < 60; i++)
+	{
+		record.TestResult[i].IsUsed		= true;
+		record.TestResult[i].IsOpenned	= true;
+		record.TestResult[i].OpenTemp	= 100.0f + i;
+		record.TestResult[i].IsClosed   = false;
+		record.TestResult[i].CloseTemp  = 60.0f  + i;
+		record.TestResult[i].IsOpenFlash = true;
+	}
+ 
+	CTimeSpan	span	= CTime::GetCurrentTime() - STD_TIME; 
+	record.StartTime   	= span.GetTotalMinutes();
+
+	record.ConfigPara = this->m_SwitchConfigPara.para;
+
+	CDongguanBetterMesMsgDlg MesMsgDlg;
+	MesMsgDlg.DoModal();
+
+	
+	Send_Better_MES(&record);
+
+	
+	
+	return;
+#endif
+*/
 
 	m_WorkMode.m_SwitchConfigPara = this->m_SwitchConfigPara.para;
 	m_WorkMode.OnClickStartButton( this,m_BoxNr,m_CurTemp,m_SwitchConfigPara.para);

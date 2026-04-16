@@ -751,8 +751,8 @@ END
 // HEX
 //
 
-IDR_HEX_HeatBox_CGP_NO_OSC HEX                     "C:\\work\\icc_avr_new\\HeatBox_CGP\\bin\\HeatBox_CGP_无晶振.hex"
-IDR_HEX_HeatBox_CGP_WITH_OSC HEX                     "C:\\work\\icc_avr_new\\HeatBox_CGP\\bin\\HeatBox_CGP_有晶振.hex"
+IDR_HEX_HeatBox_CGP_NO_OSC HEX                     "D:\\work\\icc_avr_new\\HeatBox_CGP\\bin\\HeatBox_CGP_无晶振.hex"
+IDR_HEX_HeatBox_CGP_WITH_OSC HEX                     "D:\\work\\icc_avr_new\\HeatBox_CGP\\bin\\HeatBox_CGP_有晶振.hex"
 #endif    // 中文(中华人民共和国) resources
 /////////////////////////////////////////////////////////////////////////////
 

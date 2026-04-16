@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="C:\work\public_c;C:\work\VC\HeatBox_CGP;C:\work\VC\HeatBox_CGP\HeatBox_CGP"
+				AdditionalIncludeDirectories="D:\work\public_c;D:\work\VC\HeatBox_CGP;D:\work\VC\HeatBox_CGP\HeatBox_CGP"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -126,7 +126,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="C:\work\public_c;C:\work\VC\HeatBox_CGP\HeatBox_CGP;C:\work\VC\HeatBox_CGP"
+				AdditionalIncludeDirectories="D:\work\public_c;D:\work\VC\HeatBox_CGP\HeatBox_CGP;D:\work\VC\HeatBox_CGP"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"

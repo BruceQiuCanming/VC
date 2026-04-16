@@ -116,7 +116,7 @@ BEGIN_MESSAGE_MAP(CParaDlg, CDialog)
 	ON_CBN_SELENDOK(IDC_COMBO_PLC_Y_MINUS_KEY, &CParaDlg::OnCbnSelendokComboPlcYMinusKey)
 END_MESSAGE_MAP()
 
-void EnumSerialPortFriendlyNames(CStringArray& portList);
+void EnumSerialPortFriendlyNames(CCommArray& portList);
 extern CONFIG_DATA	m_ConfigData;
 // CParaDlg 消息处理程序
 BOOL CParaDlg::OnInitDialog()
@@ -223,7 +223,7 @@ BOOL CParaDlg::OnInitDialog()
 
 		
 
-	CStringArray sa;
+	CCommArray sa;
 
 	sa.RemoveAll();
 	EnumSerialPortFriendlyNames(sa);
@@ -242,62 +242,75 @@ BOOL CParaDlg::OnInitDialog()
 
 	for(int i = 0; i < sa.GetSize(); i++)
 	{
-		m_Combo_COMM_AGING_1.AddString(sa.GetAt(i));
-		m_Combo_COMM_AGING_2.AddString(sa.GetAt(i));
-		m_Combo_COMM_AGING_3.AddString(sa.GetAt(i));
-		m_Combo_COMM_AGING_4.AddString(sa.GetAt(i));
-		m_Combo_COMM_AGING_5.AddString(sa.GetAt(i));
-		m_Combo_COMM_AGING_6.AddString(sa.GetAt(i));
-		m_Combo_COMM_AGING_7.AddString(sa.GetAt(i));
-		m_Combo_COMM_AGING_8.AddString(sa.GetAt(i));
-		m_Combo_PLC_COMM.AddString(sa.GetAt(i));
-		m_Combo_PROGRAM_COMM.AddString(sa.GetAt(i));
-	}
-	if(sa.GetSize() > 0 && m_ConfigData.m_Comm_Nr[1] >= 0 && m_ConfigData.m_Comm_Nr[1] < sa.GetSize())
-	{
-		m_Combo_COMM_AGING_1.SetCurSel(m_ConfigData.m_Comm_Nr[1]);
-	}
-	if(sa.GetSize() > 0 && m_ConfigData.m_Comm_Nr[2] >= 0 && m_ConfigData.m_Comm_Nr[2] < sa.GetSize())
-	{
-		m_Combo_COMM_AGING_2.SetCurSel(m_ConfigData.m_Comm_Nr[2]);
-	}
-	if(sa.GetSize() > 0 && m_ConfigData.m_Comm_Nr[3] >= 0 && m_ConfigData.m_Comm_Nr[3] < sa.GetSize())
-	{
-		m_Combo_COMM_AGING_3.SetCurSel(m_ConfigData.m_Comm_Nr[3]);
-	}
-	if(sa.GetSize() > 0 && m_ConfigData.m_Comm_Nr[4] >= 0 && m_ConfigData.m_Comm_Nr[4] < sa.GetSize())
-	{
-		m_Combo_COMM_AGING_4.SetCurSel(m_ConfigData.m_Comm_Nr[4]);
-	}
-	if(sa.GetSize() > 0 && m_ConfigData.m_Comm_Nr[5] >= 0 && m_ConfigData.m_Comm_Nr[5] < sa.GetSize())
-	{
-		m_Combo_COMM_AGING_5.SetCurSel(m_ConfigData.m_Comm_Nr[5]);
-	}
-	if(sa.GetSize() > 0 && m_ConfigData.m_Comm_Nr[6] >= 0 && m_ConfigData.m_Comm_Nr[6] < sa.GetSize())
-	{
-		m_Combo_COMM_AGING_6.SetCurSel(m_ConfigData.m_Comm_Nr[6]);
+		m_Combo_COMM_AGING_1.AddString(sa.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_2.AddString(sa.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_3.AddString(sa.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_4.AddString(sa.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_5.AddString(sa.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_6.AddString(sa.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_7.AddString(sa.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_8.AddString(sa.GetAt(i).m_FriendName);
+		m_Combo_PLC_COMM.AddString(sa.GetAt(i).m_FriendName);
+		m_Combo_PROGRAM_COMM.AddString(sa.GetAt(i).m_FriendName);
 	}
 
-	if(sa.GetSize() > 0 && m_ConfigData.m_Comm_Nr[7] >= 0 && m_ConfigData.m_Comm_Nr[7] < sa.GetSize())
+	CString s;
+
+	for(int i = 0; i < sa.GetSize(); i++)
 	{
-		m_Combo_COMM_AGING_7.SetCurSel(m_ConfigData.m_Comm_Nr[7]);
+		s = sa.GetAt(i).m_FriendName;
+		if(s.Find(_T("Ch A")) > 0)
+		{
+			m_Combo_COMM_AGING_1.SetCurSel(i);
+		}
+
+		if(s.Find(_T("Ch B")) > 0)
+		{
+			m_Combo_COMM_AGING_2.SetCurSel(i);
+		}
+
+		if(s.Find(_T("Ch C")) > 0)
+		{
+			m_Combo_COMM_AGING_3.SetCurSel(i);
+		}
+
+		if(s.Find(_T("Ch D")) > 0)
+		{
+			m_Combo_COMM_AGING_4.SetCurSel(i);
+		}
+
+		if(s.Find(_T("Ch E")) > 0)
+		{
+			m_Combo_COMM_AGING_5.SetCurSel(i);
+		}
+
+		if(s.Find(_T("Ch F")) > 0)
+		{
+			m_Combo_COMM_AGING_6.SetCurSel(i);
+		}
+
+		if(s.Find(_T("Ch G")) > 0)
+		{
+			m_Combo_COMM_AGING_7.SetCurSel(i);
+		}
+
+		if(s.Find(_T("Ch H")) > 0)
+		{
+			m_Combo_COMM_AGING_8.SetCurSel(i);
+		}
+
+		if(s.Find(_T("(COM1)")) > 0)
+		{
+			m_Combo_PLC_COMM.SetCurSel(i);
+		}
+
+		if(s.Find(_T("(COM2)")) > 0)
+		{
+			m_Combo_PROGRAM_COMM.SetCurSel(i);
+		}
 	}
 
-	if(sa.GetSize() > 0 && m_ConfigData.m_Comm_Nr[8] >= 0 && m_ConfigData.m_Comm_Nr[8] < sa.GetSize())
-	{
-		m_Combo_COMM_AGING_8.SetCurSel(m_ConfigData.m_Comm_Nr[8]);
-	}
-
-	if(sa.GetSize() > 0 && m_ConfigData.m_Comm_Device_HuiKong_DIO >= 0 && m_ConfigData.m_Comm_Device_HuiKong_DIO < sa.GetSize())
-	{
-		m_Combo_PLC_COMM.SetCurSel(m_ConfigData.m_Comm_Device_HuiKong_DIO);
-	}
 	
-
-	if(sa.GetSize() > 0 && m_ConfigData.m_Comm_Nr[0] >= 0 && m_ConfigData.m_Comm_Nr[0] < sa.GetSize())
-	{
-		m_Combo_PROGRAM_COMM.SetCurSel(m_ConfigData.m_Comm_Nr[0]);
-	}
 
 	
 

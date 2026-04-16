@@ -254,7 +254,7 @@ UINT ReadCommThreadProc_PCB(LPVOID pParam)
 			{
 				MODBUS_RS485_WRITE_ANSWER_WORD_1* answer = (MODBUS_RS485_WRITE_ANSWER_WORD_1*)&ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].GetData()[ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].GetSize() - sizeof(MODBUS_RS485_WRITE_ANSWER_WORD_1)];
 				unsigned short crc = CComm::CRC16_MODBUS((unsigned char*)answer, sizeof(MODBUS_RS485_WRITE_ANSWER_WORD_1) - 2);
-				if (answer->CRC == crc)
+				if (answer->CRC == crc && answer->head.RS485_Addr == 0xFE && answer->head.cmd == 0x06)
 				{
 					::SendMessage(comPara->m_hWnd, comPara->MessageID, (WPARAM)answer, sizeof(MODBUS_RS485_WRITE_ANSWER_WORD_1));
 					ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].RemoveAll();
@@ -267,7 +267,7 @@ UINT ReadCommThreadProc_PCB(LPVOID pParam)
 				{
 					MODBUS_RS485_READ_ANSWER_WORD_16* answer = (MODBUS_RS485_READ_ANSWER_WORD_16*)&ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].GetData()[ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].GetSize() - sizeof(MODBUS_RS485_READ_ANSWER_WORD_16)];
 					unsigned short crc = CComm::CRC16_MODBUS((unsigned char*)answer, sizeof(MODBUS_RS485_READ_ANSWER_WORD_16) - 2);
-					if (answer->CRC == crc)
+					if (answer->CRC == crc && answer->head.RS485_Addr == 0xFE && answer->head.cmd == 0x03)
 					{
 						::SendMessage(comPara->m_hWnd, comPara->MessageID, (WPARAM)answer, sizeof(MODBUS_RS485_READ_ANSWER_WORD_16));
 						ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].RemoveAll();
@@ -278,7 +278,7 @@ UINT ReadCommThreadProc_PCB(LPVOID pParam)
 				{
 					MODBUS_RS485_READ_ANSWER_WORD_18* answer = (MODBUS_RS485_READ_ANSWER_WORD_18*)&ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].GetData()[ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].GetSize() - sizeof(MODBUS_RS485_READ_ANSWER_WORD_18)];
 					unsigned short crc = CComm::CRC16_MODBUS((unsigned char*)answer, sizeof(MODBUS_RS485_READ_ANSWER_WORD_18) - 2);
-					if (answer->CRC == crc)
+					if (answer->CRC == crc && answer->head.RS485_Addr == 0xFE && answer->head.cmd == 0x03)
 					{
 						::SendMessage(comPara->m_hWnd, comPara->MessageID, (WPARAM)answer, sizeof(MODBUS_RS485_READ_ANSWER_WORD_18));
 						ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].RemoveAll();
@@ -289,7 +289,7 @@ UINT ReadCommThreadProc_PCB(LPVOID pParam)
 				{
 					MODBUS_RS485_READ_ANSWER_WORD_3* answer = (MODBUS_RS485_READ_ANSWER_WORD_3*)&ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].GetData()[ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].GetSize() - sizeof(MODBUS_RS485_READ_ANSWER_WORD_3)];
 					unsigned short crc = CComm::CRC16_MODBUS((unsigned char*)answer, sizeof(MODBUS_RS485_READ_ANSWER_WORD_3) - 2);
-					if (answer->CRC == crc)
+					if (answer->CRC == crc && answer->head.RS485_Addr == 0xFE && answer->head.cmd == 0x03)
 					{
 						::SendMessage(comPara->m_hWnd, comPara->MessageID, (WPARAM)answer, sizeof(MODBUS_RS485_READ_ANSWER_WORD_3));
 						ReadArray[comPara->MessageID - Comm_PROGRAM_MSG_ID ].RemoveAll();

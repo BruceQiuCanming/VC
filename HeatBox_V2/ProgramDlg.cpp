@@ -48,20 +48,20 @@ BOOL CProgramDlg::OnInitDialog()
 	this->m_Combo_BoxNr.AddString(_T("5"));
 	this->m_Combo_BoxNr.AddString(_T("6"));
 
-	this->m_Combo_BoxNr.SetCurSel(0);
+	this->m_Combo_BoxNr.SetCurSel(m_BoxNr);
 
 
 	m_ComboTM7705_OSC.AddString(_T("ÓÐ¾§Õñ"));
 	m_ComboTM7705_OSC.AddString(_T("ÎÞ¾§Õñ"));
 
-	m_ComboTM7705_OSC.SetCurSel(::G_NormalConfigPara[0].TM7705_NoOSC);
+	m_ComboTM7705_OSC.SetCurSel(m_TM7705_OSC);
 
 	for(int i = 0; i < sizeof(G_InterfacePcbTypeName)/sizeof(G_InterfacePcbTypeName[0]); i++)
 	{
 		this->m_ComboInterfaceBoardType.AddString(G_InterfacePcbTypeName[i].name);
 	}
 
-	m_ComboInterfaceBoardType.SetCurSel(G_NormalConfigPara[0].InterfaceBoardType); 
+	m_ComboInterfaceBoardType.SetCurSel(G_NormalConfigPara[m_BoxNr].InterfaceBoardType); 
 
 	return true;
 }

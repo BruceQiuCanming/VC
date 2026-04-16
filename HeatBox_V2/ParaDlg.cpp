@@ -307,7 +307,6 @@ void CParaDlg::UpdateSetPara(void)
 	m_CurMaxHeatBox.SetCurSel(G_CurMaxHeatBox - 1);	
 	
 
-	
 	m_Combo_EndTestDoorStatus.SetCurSel(::G_NormalConfigPara[m_BoxNr].StopTestAutoCloseDoor );  
 
 	

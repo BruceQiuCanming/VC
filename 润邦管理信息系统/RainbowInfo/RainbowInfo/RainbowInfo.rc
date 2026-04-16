@@ -1,0 +1,289 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#ifndef APSTUDIO_INVOKED
+#include "targetver.h"
+#endif
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 中文(中华人民共和国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#ifndef APSTUDIO_INVOKED\r\n"
+    "#include ""targetver.h""\r\n"
+    "#endif\r\n"
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)\r\n"
+    "LANGUAGE 4, 2\r\n"
+    "#pragma code_page(936)\r\n"
+    "#include ""res\\RainbowInfo.rc2""  // 非 Microsoft Visual C++ 编辑的资源\r\n"
+    "#include ""l.CHS\\afxres.rc""      // 标准组件\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "res\\RainbowInfo.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 170, 62
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "关于 RainbowInfo"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,14,14,21,20
+    LTEXT           "RainbowInfo，1.0 版",IDC_STATIC,42,14,114,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 2026",IDC_STATIC,42,26,114,8
+    DEFPUSHBUTTON   "确定",IDOK,113,41,50,14,WS_GROUP
+END
+
+IDD_RAINBOWINFO_DIALOG DIALOGEX 0, 0, 320, 200
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "RainbowInfo"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,209,179,50,14
+    PUSHBUTTON      "取消",IDCANCEL,263,179,50,14
+    PUSHBUTTON      "进货",IDC_BUTTON_IN,25,69,41,22
+    PUSHBUTTON      "发货",IDC_BUTTON_OUT,165,69,41,22
+END
+
+IDD_DIALOG_Delivery_Note DIALOGEX 0, 0, 467, 243
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "送货单"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,117,222,50,14
+    PUSHBUTTON      "取消",IDCANCEL,199,222,50,14
+    LTEXT           "品名",IDC_STATIC,12,50,51,17,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_NAME,7,68,89,17,ES_AUTOHSCROLL
+    LTEXT           "数量",IDC_STATIC,237,50,51,17,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_NUM,237,68,54,17,ES_AUTOHSCROLL
+    LTEXT           "单价",IDC_STATIC,293,50,51,17,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_PRICE,293,68,54,17,ES_AUTOHSCROLL
+    LTEXT           "总价",IDC_STATIC,349,50,51,17,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_AMOUNT,349,68,54,17,ES_AUTOHSCROLL
+    LTEXT           "备注",IDC_STATIC,409,49,51,17,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_MEMO,406,68,54,17,ES_AUTOHSCROLL
+    PUSHBUTTON      "增加项",IDC_BUTTON_SAVE,46,113,56,23
+    PUSHBUTTON      "删除项",IDC_BUTTON_DEL,129,113,56,23
+    PUSHBUTTON      "打印",IDC_BUTTON_PRINT,212,113,56,23
+    LTEXT           "收货单位",IDC_STATIC,7,7,51,17,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_RECEIVER,46,7,331,17,ES_AUTOHSCROLL
+    PUSHBUTTON      "选择客户",IDC_BUTTON_RECEIVER,418,7,42,17
+    LTEXT           "型号",IDC_STATIC,99,50,51,17,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_TYPE,99,68,89,17,ES_AUTOHSCROLL
+    CONTROL         "",IDC_LIST2,"SysListView32",LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,153,453,57
+    PUSHBUTTON      "选择品名",IDC_BUTTON_PRODUCTION,7,86,42,17
+    PUSHBUTTON      "选择型号",IDC_BUTTON_TYPE,100,87,42,17
+    LTEXT           "单号",IDC_STATIC,184,30,51,17,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_SHEET_NR,237,30,139,17,ES_AUTOHSCROLL
+    PUSHBUTTON      "选择单号",IDC_BUTTON_RECEIVER2,418,30,42,17
+    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | WS_TABSTOP,14,33,100,15
+    LTEXT           "单位",IDC_STATIC,190,50,45,17,SS_CENTERIMAGE
+    EDITTEXT        IDC_EDIT_UNIT,190,68,46,17,ES_AUTOHSCROLL
+    PUSHBUTTON      "选择单位",IDC_BUTTON_UNIT,190,87,42,17
+END
+
+IDD_DIALOG_LIST DIALOGEX 0, 0, 172, 91
+STYLE DS_SETFONT | DS_MODALFRAME | DS_SETFOREGROUND | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 20, "Microsoft Sans Serif", 0, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,26,74,38,14
+    PUSHBUTTON      "取消",IDCANCEL,119,74,38,14
+    LISTBOX         IDC_LIST1,0,2,171,71,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
+END
+
+IDD_INPUT_DIALOG DIALOGEX 0, 0, 156, 126
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 16, "黑体", 0, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "确认",IDOK,7,105,50,14
+    PUSHBUTTON      "取消",IDCANCEL,99,105,50,14
+    EDITTEXT        IDC_EDIT1,7,7,142,22,ES_AUTOHSCROLL
+    PUSHBUTTON      "1",IDC_BUTTON_1,7,35,34,18
+    PUSHBUTTON      "2",IDC_BUTTON_2,43,35,34,18
+    PUSHBUTTON      "3",IDC_BUTTON_3,79,35,34,18
+    PUSHBUTTON      "4",IDC_BUTTON_4,115,35,34,18
+    PUSHBUTTON      "5",IDC_BUTTON_5,7,57,34,18
+    PUSHBUTTON      "6",IDC_BUTTON_6,43,57,34,18
+    PUSHBUTTON      "7",IDC_BUTTON_7,79,57,34,18
+    PUSHBUTTON      "8",IDC_BUTTON_8,115,57,34,18
+    PUSHBUTTON      "9",IDC_BUTTON_9,7,79,34,18
+    PUSHBUTTON      "0",IDC_BUTTON_0,43,79,34,18
+    PUSHBUTTON      ".",IDC_BUTTON_DOT,79,79,34,18
+    PUSHBUTTON      "清除",IDC_BUTTON_CLEAR,115,79,34,18
+    PUSHBUTTON      "+/-",IDC_BUTTON_PLUS_MINUS,61,106,34,13
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080403a8"
+        BEGIN
+            VALUE "CompanyName", "TODO: <公司名>"
+            VALUE "FileDescription", "TODO: <文件说明>"
+            VALUE "FileVersion", "1.0.0.1"
+            VALUE "InternalName", "RainbowInfo.exe"
+            VALUE "LegalCopyright", "TODO: (C) <公司名>。保留所有权利。"
+            VALUE "OriginalFilename", "RainbowInfo.exe"
+            VALUE "ProductName", "TODO: <产品名>"
+            VALUE "ProductVersion", "1.0.0.1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 936
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 163
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+
+    IDD_RAINBOWINFO_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 313
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 193
+    END
+
+    IDD_DIALOG_Delivery_Note, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 460
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 236
+    END
+
+    IDD_DIALOG_LIST, DIALOG
+    BEGIN
+        RIGHTMARGIN, 171
+        TOPMARGIN, 2
+        BOTTOMMARGIN, 88
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDS_ABOUTBOX            "关于 RainbowInfo(&A)..."
+    IDP_SOCKETS_INIT_FAILED "Windows 套接字初始化失败。"
+END
+
+#endif    // 中文(中华人民共和国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE 4, 2
+#pragma code_page(936)
+#include "res\RainbowInfo.rc2"  // 非 Microsoft Visual C++ 编辑的资源
+#include "l.CHS\afxres.rc"      // 标准组件
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

@@ -38,6 +38,12 @@
 #include "InputDlg.h"
 #include "BarcodeDlg.h"
 
+#include <windows.h>
+#include <psapi.h>
+#include <shlobj.h>
+#pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "sapi.lib")
+
 CONFIG_DATA	m_ConfigData;
 
 
@@ -432,16 +438,18 @@ BEGIN_MESSAGE_MAP(CHotLong_PCBDlg, CDialog)
 
 
 // CHotLong_PCBDlg 消息处理程序
-void EnumSerialPortFriendlyNames(CStringArray& portList);
+void EnumSerialPortFriendlyNames(CCommArray& portList);
 
 CBrush 	G_bkBrush;
-COLORREF BK_COLOR(RGB(0,160,128)); //创建一把黄色的背景刷子
+CBrush 	G_RedBrush;
+COLORREF BK_COLOR(RGB(0,168,128)); //创建一把黄色的背景刷子
 BOOL CHotLong_PCBDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
 	G_bkBrush.CreateSolidBrush(BK_COLOR); //创建一把黄色的背景刷子
 
+	G_RedBrush.CreateSolidBrush(RGB(255,0,0)); //创建一把黄色的背景刷子;
 
 	// 将“关于...”菜单项添加到系统菜单中。
 
@@ -605,55 +613,77 @@ BOOL CHotLong_PCBDlg::OnInitDialog()
 
 	
 
-	CStringArray CommName;
-	CommName.RemoveAll();
-	EnumSerialPortFriendlyNames(CommName);
+	CCommArray CommNameArray;
+	CommNameArray.RemoveAll();
+	EnumSerialPortFriendlyNames(CommNameArray);
 
 	m_Device_HuiKong_DIO.m_CommPara.comm		=&m_Device_HuiKong_DIO;
 	m_Device_HuiKong_DIO.m_CommPara.MessageID	= Comm_Device_HuiKong_DIO_MSG_ID;
 	m_Device_HuiKong_DIO.m_CommPara.m_hWnd		= this->GetSafeHwnd();
 	m_Device_HuiKong_DIO.m_bXModem				= false;
 
-	if(m_ConfigData.m_Comm_Device_HuiKong_DIO >= 0 && m_ConfigData.m_Comm_Device_HuiKong_DIO < CommName.GetSize())
+	
+	CommStr = _T("COM1");
+	if(m_Device_HuiKong_DIO.OpenComm(CommStr, &m_Device_HuiKong_DIO.m_CommPara) == 0)
 	{
-		CommStr = CommName.GetAt(m_ConfigData.m_Comm_Device_HuiKong_DIO);
-		CommStr.Trim();
-		int left = CommStr.Find(_T("("));
-		CommStr = CommStr.Right(CommStr.GetLength() - left - 1);
-		CommStr = CommStr.Left(CommStr.GetLength() - 1);
-		if(m_Device_HuiKong_DIO.OpenComm(CommStr, &m_Device_HuiKong_DIO.m_CommPara) == 0)
-		{
-			m_Device_HuiKong_DIO.m_CommPara.ReadThread = AfxBeginThread(ReadCommThreadProc_PLC, (LPVOID)(&m_Device_HuiKong_DIO.m_CommPara), THREAD_PRIORITY_NORMAL);
-		}
-
+		m_Device_HuiKong_DIO.m_CommPara.ReadThread = AfxBeginThread(ReadCommThreadProc_PLC, (LPVOID)(&m_Device_HuiKong_DIO.m_CommPara), THREAD_PRIORITY_NORMAL);
 	}
+
+	
+
+	CString NameList[9] = 
+	{
+		_T("(COM2)"),
+		_T("Ch A"),
+		_T("Ch B"),
+		_T("Ch C"),
+		_T("Ch D"),
+		_T("Ch E"),
+		_T("Ch F"),
+		_T("Ch G"),
+		_T("Ch H"),
+	};
+
 
 	for (int i = 0; i < 9; i++)
 	{
-
+		CommStr = _T("");
 		
 		m_Device_HotLong_PCB[i].m_CommPara.comm			= m_Device_HotLong_PCB[i].m_Comm;
 		m_Device_HotLong_PCB[i].m_CommPara.MessageID	= Comm_PROGRAM_MSG_ID + i;
 		m_Device_HotLong_PCB[i].m_CommPara.m_hWnd		= this->GetSafeHwnd();
 		m_Device_HotLong_PCB[i].m_bXModem				= false;
 		
-		if(CommName.GetSize() > 0 
-			&& m_ConfigData.m_Comm_Nr[i] >= 0 
-			&& m_ConfigData.m_Comm_Nr[i] < CommName.GetSize())
+		
+		
+		if(CommNameArray.GetSize() > 0)
 		{
-			CommStr = CommName.GetAt(m_ConfigData.m_Comm_Nr[i]);
-			if(CommStr.GetLength() > 0)
+			for(int x = 0; x < CommNameArray.GetSize(); x++)
 			{
-				CommStr = CommName.GetAt(m_ConfigData.m_Comm_Nr[i]);
-				CommStr.Trim();
-				int left = CommStr.Find(_T("("));
-				CommStr = CommStr.Right(CommStr.GetLength() - left - 1);
-				CommStr = CommStr.Left(CommStr.GetLength() - 1);
+				CString s1 = CommNameArray.GetAt(x).m_FriendName;
+				if(s1.Find(NameList[i]) > 0)
+				{
+					CommStr = CommNameArray.GetAt(x).m_FileName;
+					break;
+				}
+			}
+			
+			
+			
+			if(CommStr.GetLength() == 0)
+			{
+				CString ss;
+				ss.Format(_T("没有对应的 %s 口"), NameList[i]);
+				AfxMessageBox(ss);
+			}
+			else
+			{
 				if(m_Device_HotLong_PCB[i].OpenComm(CommStr, &m_Device_HotLong_PCB[i].m_CommPara) == 0)
 				{
 					m_Device_HotLong_PCB[i].m_CommPara.ReadThread = AfxBeginThread(ReadCommThreadProc_PCB, (LPVOID)(&m_Device_HotLong_PCB[i].m_CommPara), THREAD_PRIORITY_NORMAL);
 				}
 			}
+			
 		}
 		else
 		{
@@ -673,6 +703,16 @@ BOOL CHotLong_PCBDlg::OnInitDialog()
 
 	
 	SavePassFail();
+
+	SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_1, false);
+	SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_2, false);
+	SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_3, false);
+	SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_4, false);
+	SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_5, false);
+	SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_6, false);
+	SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_7, false);
+	SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_8, false);
+
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 
@@ -750,6 +790,24 @@ void CHotLong_PCBDlg::ReMoveWindows_BIG_AMP(void)
 
 			this->m_staticScreen.MoveWindow(0,0,CAMERA_WIDTH,CAMERA_HEIGHT,true);
 
+			w = this->GetDlgItem(IDC_STATIC_PP_1);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_STATIC_PP_2);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_STATIC_PP_3);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_STATIC_PP_4);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_STATIC_PP_5);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_STATIC_PP_6);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_STATIC_PP_7);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_STATIC_PP_8);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_STATIC_PP_9);w->ShowWindow(SW_HIDE);
+
+			w = this->GetDlgItem(IDC_EDIT_PP_1);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_EDIT_PP_2);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_EDIT_PP_3);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_EDIT_PP_4);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_EDIT_PP_5);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_EDIT_PP_6);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_EDIT_PP_7);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_EDIT_PP_8);w->ShowWindow(SW_HIDE);
 			
 			/*int ID = ::m_ConfigData.m_Camera_Nr;
 			m_ListCtrl.ResetContent();
@@ -2471,6 +2529,24 @@ LRESULT CHotLong_PCBDlg::OnComm_PCB_7(WPARAM wParam, LPARAM lParam)
 LRESULT CHotLong_PCBDlg::OnComm_PCB_8(WPARAM wParam, LPARAM lParam)
 {
 	int ID = 8;
+	/*
+	CString s;
+	
+
+	CString s1;
+	unsigned char *data = (unsigned char *)wParam;
+	int date_len = (int)lParam;
+
+	for(int i = 0; i < date_len; i++)
+	{
+		s1.Format(_T("%02X,"),data[i]);
+		s += s1;
+	}
+
+	CWnd *w = this->GetDlgItem(IDC_BUTTON_START_8);
+
+	w->SetWindowTextW(s);
+*/
 	this->m_ParaDlg.DisplayRec_hotLong(ID,(unsigned char *)wParam,(int)lParam);
 	m_Device_HotLong_PCB[ID].DealOnComm((unsigned char *)wParam,(int)lParam);
 	m_Pv[ID] = m_Device_HotLong_PCB[ID].m_Pv;
@@ -2801,6 +2877,8 @@ void CHotLong_PCBDlg::SetResult(int ID, bool Pass)
 		break;
 	}
 	m_Device_HotLong_PCB[ID].m_SubMode = 0;
+
+	WriteMES(ID,Pass);
 }
 
 void CHotLong_PCBDlg::WorkMode_Program_BIG_AMP(void)
@@ -3083,6 +3161,12 @@ void CHotLong_PCBDlg::WorkMode_Program_X90(void)
 			this->m_ListMsg[0].InsertString(0, msgLog);
 			WriteLog(0, _T(""), m_Device_HotLong_PCB[0].m_BoxBeginTime, msgLog);
 			m_Device_HotLong_PCB[0].m_SubMode++;
+			m_Led_Cool_IsOK		= false;
+			m_Led_Color_IsOK	= false;
+			m_Led_Heat_IsOK		= false;
+			m_Led_Heat			= _T("");
+			m_Led_Color			= _T("");
+			this->UpdateData(false);
 			m_Device_HotLong_PCB[0].m_SubModeBeginTime = CTime::GetCurrentTime();
 			SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID, true);
 		}
@@ -3098,37 +3182,58 @@ void CHotLong_PCBDlg::WorkMode_Program_X90(void)
 	{
 		m_Device_HotLong_PCB[0].m_EditMsg = _T("程序烧录...");
 
-		if (iSpan > 20)
+		if (iSpan > 30)
 		{
-			 
-			m_Device_HotLong_PCB[0].m_EditMsg = _T("程序烧录失败");
+			CString s = _T("程序烧录失败:  ");
+			if(m_Led_Heat_IsOK == false)
+			{
+				s+= _T("加热指示灯,");
+			}
+			if(m_Led_Color_IsOK == false)
+			{
+				s+= _T("彩色指示灯,");
+			}
+			if(m_Program_RS485_IsOK == false)
+			{
+				s+= _T("RS485通信");
+			}
+
+			m_Device_HotLong_PCB[0].m_EditMsg = s;
 			msgLog = sCur + m_Device_HotLong_PCB[0].m_EditMsg;
 			this->m_ListMsg[0].InsertString(0, msgLog);
 			WriteLog(0, _T(""), m_Device_HotLong_PCB[0].m_BoxBeginTime, msgLog);
 			this->SetResult_Program(false);
 			this->UpdateData(false);
-			SetResult_Program(false);
+			
 		}
 		else if (iSpan > 2)
 		{
 			
+			if(m_Led_Heat.Compare(_T("红色")) == 0
+					|| m_Led_Heat.Compare(_T("绿色")) == 0)
+			{
+				m_Led_Heat_IsOK = true;
+			}
+
+			if((m_Led_Color.Compare(_T("红色")) == 0
+					|| m_Led_Color.Compare(_T("绿色")) == 0))
+			{
+				m_Led_Color_IsOK = true;
+			}
+
 			CString msg;
 			this->m_Edit_Degree.GetWindowTextW(msg);
 			if (m_Pv[0] != 0 || m_Sv[0] != 0)
 			{
 				
-				if((m_Led_Heat.Compare(_T("红色")) == 0
-					|| m_Led_Heat.Compare(_T("绿色")) == 0)
-					&& 
-				(m_Led_Color.Compare(_T("红色")) == 0
-					|| m_Led_Color.Compare(_T("绿色")) == 0))
+				m_Program_RS485_IsOK = true;
+
+				if(m_Led_Heat_IsOK || m_Led_Color_IsOK)
 				{
-					m_Device_HotLong_PCB[0].m_EditMsg = _T("建立485通讯,") + m_Led_Heat + _T(",") + m_Led_Color;
+					m_Device_HotLong_PCB[0].m_EditMsg = _T("建立485通讯 ,加热指示,彩色指示");
 					msgLog = sCur + m_Device_HotLong_PCB[0].m_EditMsg;
 					this->m_ListMsg[0].InsertString(0, msgLog);
 					WriteLog(0, _T(""), m_Device_HotLong_PCB[0].m_BoxBeginTime, msgLog);
-
-					
 
 					this->SetResult_Program(true);
 				}
@@ -3271,7 +3376,7 @@ void CHotLong_PCBDlg::WorkMode_X90(int ID)
 			span = cur - m_Device_HotLong_PCB[ID].m_SubModeBeginTime;
 			if (span.GetTotalSeconds() > 120)
 			{
-				SetSv(ID-1, 90);
+				SetSv(ID, 90);
 				if(m_ConfigData.m_Pcb_Type == PCB_TYPE_X90
 				|| m_ConfigData.m_Pcb_Type == PCB_TYPE_X90_NO_BARCODE)
 				{
@@ -3381,7 +3486,7 @@ void CHotLong_PCBDlg::WorkMode_BIG_AMP(int ID)
 			span = cur - m_Device_HotLong_PCB[ID].m_SubModeBeginTime;
 			if (span.GetTotalSeconds() > 120)
 			{
-				SetSv(ID-1, 90);
+				SetSv(ID, 90);
 				m_Device_HotLong_PCB[ID].m_SubModeBeginTime = cur;
 				m_Device_HotLong_PCB[ID].m_SubMode ++;
 				m_ListMsg[ID].InsertString(0, sCur + _T("2分钟降到92°"));
@@ -3650,6 +3755,7 @@ void CHotLong_PCBDlg::SetResult_Program(bool pass)
 void CHotLong_PCBDlg::ClickedButtonStart(int ButtonID)
 {
 	
+	
 	CTime tm = CTime::GetCurrentTime(); // 获取当前时间 
 	CString s = tm.Format(_T("%H:%M:%S "));
 	CString msg;
@@ -3674,6 +3780,13 @@ void CHotLong_PCBDlg::ClickedButtonStart(int ButtonID)
 		return;
 	}
 #endif
+
+	m_Device_HotLong_PCB[ButtonID].m_Comm->m_LastRecTime = CTime::GetCurrentTime();
+
+	m_Device_HotLong_PCB[ButtonID].m_Pv = 0;
+	m_Device_HotLong_PCB[ButtonID].m_Sv = 0;
+	m_Device_HotLong_PCB[ButtonID].m_Pp = 0;
+
 	if(m_ConfigData.m_Pcb_Type == PCB_TYPE_BIG_AMP
 		|| m_ConfigData.m_Pcb_Type == PCB_TYPE_X90
 		|| m_ConfigData.m_Pcb_Type == PCB_TYPE_X10)
@@ -3689,6 +3802,10 @@ void CHotLong_PCBDlg::ClickedButtonStart(int ButtonID)
 			return;
 		}
 	}
+
+	
+
+
 	if (ButtonID == 0)
 	{
 		if(m_ConfigData.m_Pcb_Type == PCB_TYPE_BIG_AMP
@@ -3816,7 +3933,7 @@ void CHotLong_PCBDlg::ClickedButtonStart(int ButtonID)
 		m_Sv[ButtonID] = 0;
 		m_Device_HotLong_PCB[ButtonID].m_Edit_Result.SetWindowTextW( _T(""));
 		m_Device_HotLong_PCB[ButtonID].m_Edit_Result.SetBackColor(RGB(0xFF, 0xFF, 0));
-		SetSv(ButtonID - 1, 100);
+		SetSv(ButtonID, 100);
 
 		if(m_ConfigData.m_Pcb_Type == PCB_TYPE_X90
 			|| m_ConfigData.m_Pcb_Type == PCB_TYPE_X90_NO_BARCODE)
@@ -4049,7 +4166,64 @@ void CHotLong_PCBDlg::OnTimer(UINT_PTR nIDEvent)
 		StartVideo();
 	}
 
+	SYSTEM_INFO si;
+    GetSystemInfo(&si);
+
+	PROCESS_MEMORY_COUNTERS pmc;
+   	DWORD pid		= GetCurrentProcessId();
+	HANDLE handle	= ::GetCurrentProcess(); 
+	GetProcessMemoryInfo(handle,&pmc,sizeof(pmc));
+
+	int usedMemory = 0;
+
+    PSAPI_WORKING_SET_INFORMATION workSet;
+    memset(&workSet, 0, sizeof(workSet));
+
+    BOOL bOk = QueryWorkingSet(handle, &workSet, sizeof(workSet));
+
+    if (bOk || (!bOk && GetLastError() == ERROR_BAD_LENGTH))
+    {
+        int nSize = sizeof(workSet.NumberOfEntries) + workSet.NumberOfEntries*sizeof(workSet.WorkingSetInfo);
+        char* pBuf = new char[nSize];
+        if (pBuf)
+        {
+            QueryWorkingSet(handle, pBuf, nSize);
+            PSAPI_WORKING_SET_BLOCK* pFirst = (PSAPI_WORKING_SET_BLOCK*)(pBuf + sizeof(workSet.NumberOfEntries));
+            DWORD dwMem = 0;
+            for (ULONG_PTR nMemEntryCnt = 0; nMemEntryCnt < workSet.NumberOfEntries; nMemEntryCnt++, pFirst++)
+            {
+                if (pFirst->Shared == 0)
+                {
+                    dwMem += si.dwPageSize;
+                }
+            }
+            delete pBuf;
+            pBuf = NULL;
+            if (workSet.NumberOfEntries > 0)
+            {
+                usedMemory = dwMem / (1024);
+            }
+        }
+    }
+	CString strInfo;
+	strInfo.Format(_T("  进程id:%d 已使用内存:%d KB"), pid, usedMemory);
 	
+	CTime cur;
+	cur = cur.GetCurrentTime();
+	CString s;
+	TCHAR format[] = _T("  %04d-%02d-%02d %02d:%02d:%02d ");
+	s.Format(format,cur.GetYear(),cur.GetMonth(),cur.GetDay(),cur.GetHour(),cur.GetMinute(),cur.GetSecond());
+
+	s = _T("江阴辉龙线路板测试系统  ") + s;
+
+	s += strInfo;
+
+	s +=_T(" 编译:");
+		s += __DATE__; 
+		s += _T(" "); 
+		s += __TIME__; 
+
+	this->SetWindowText(s);
 
 	CDialog::OnTimer(nIDEvent);
 }
@@ -4111,7 +4285,7 @@ void CHotLong_PCBDlg::TimerSend_PLC()
 		s += _T("  PLC 无响应");
 		for(int i = 0; i < 9; i++)
 		{
-			m_ListMsg[i].AddString(s);
+			m_ListMsg[i].InsertString(0,s);
 		}
 		m_Device_HuiKong_DIO.m_LastRecTime = CTime::GetCurrentTime();
 	}
@@ -4144,13 +4318,15 @@ void CHotLong_PCBDlg::TimerSend(int CommNr)
 	}
 	else
 	{
-		if(ts.GetTotalSeconds() >= 10)
+		if(ts.GetTotalSeconds() >= 30)
 		{
 			CString s;
 			s = cur.Format(_T("%H:%M:%S"));
 			s += _T("  线路板 无响应");
-			
-			m_ListMsg[CommNr].AddString(s);
+
+			m_ListMsg[CommNr].InsertString(0,s);
+
+			SetResult(CommNr, false);
 			
 			m_Device_HotLong_PCB[CommNr].m_Comm->m_LastRecTime = CTime::GetCurrentTime();
 		}
@@ -4256,7 +4432,7 @@ void CHotLong_PCBDlg::StartVideo(void)
 	s.Format(_T(" 图像处理时间 %dms"),t);
 	text += s;
 	//AfxMessageBox(s);
-	this->SetWindowTextW(text);
+	//this->SetWindowTextW(text);
 	}
 	
 	hWnd = NULL;
@@ -5116,7 +5292,7 @@ DEFINE_GUID(GUID_DEVCLASS_PORTS,
 0x4D36E978, 0xE325, 0x11CE, 0xBF, 0xC1, 0x08, 0x00, 0x2B, 0xE1, 0x03, 0x18);
 #endif
 
-void EnumSerialPortFriendlyNames(CStringArray& portList)
+void EnumSerialPortFriendlyNames(CCommArray& portList)
 {
     portList.RemoveAll();
 
@@ -5149,6 +5325,8 @@ void EnumSerialPortFriendlyNames(CStringArray& portList)
             sizeof(szFriendlyName),
             NULL))
         {
+
+
 			// 4. 获取设备实例ID，用于映射到 COMx
             TCHAR szInstanceId[256] = { 0 };
             if (SetupDiGetDeviceInstanceId(
@@ -5186,16 +5364,21 @@ void EnumSerialPortFriendlyNames(CStringArray& portList)
                         &dwType,
                         (LPBYTE)szPortName,
                         &dwSize);
+
+
 						if( ret == ERROR_SUCCESS)
 						{
+
 							// 设备路径包含实例ID，说明是同一个串口
-							//if (_tcsstr(szDevicePath, szInstanceId) != NULL)
+							CString s1 = CString(szFriendlyName);
+							CString s2 = _T("(") + CString(szPortName) + _T(")");
+							if (s1.Find(s2) >= 0)
 							{
-								// 组合：COMx + 友好名称
-								CString strItem;
-								//strItem.Format(_T("%s: %s"), szPortName, szFriendlyName);
-								strItem.Format(_T("%s"), szFriendlyName);
-								portList.Add(strItem);
+								COMM_FRIENDNAME_FILENAME comm_array;
+								comm_array.m_FriendName	=	CString(szFriendlyName);
+								comm_array.m_FileName	=	CString(szPortName);
+								//AfxMessageBox(comm_array.m_FriendName + _T(" ") + comm_array.m_FileName);
+								portList.Add(comm_array);
 								break;
 							}
 						}
@@ -5250,7 +5433,142 @@ HBRUSH CHotLong_PCBDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 		case IDC_EDIT_RESULT_8:
 		break;
 
-			
+		case IDC_EDIT_MSG_1:
+		case IDC_EDIT_MSG_2:
+		case IDC_EDIT_MSG_3:
+		case IDC_EDIT_MSG_4:
+		case IDC_EDIT_MSG_5:
+		case IDC_EDIT_MSG_6:
+		case IDC_EDIT_MSG_7:
+		case IDC_EDIT_MSG_8:
+			break;
+		case IDC_EDIT_Pv_0:
+		case IDC_EDIT_Pv_1:
+		case IDC_EDIT_Pv_2:
+		case IDC_EDIT_Pv_3:
+		case IDC_EDIT_Pv_4:
+		case IDC_EDIT_Pv_5:
+		case IDC_EDIT_Pv_6:
+		case IDC_EDIT_Pv_7:
+		case IDC_EDIT_Pv_8:
+			break;
+
+		case IDC_EDIT_Sv_0:
+		case IDC_EDIT_Sv_1:
+		case IDC_EDIT_Sv_2:
+		case IDC_EDIT_Sv_3:
+		case IDC_EDIT_Sv_4:
+		case IDC_EDIT_Sv_5:
+		case IDC_EDIT_Sv_6:
+		case IDC_EDIT_Sv_7:
+		case IDC_EDIT_Sv_8:
+			break;
+
+		case IDC_EDIT_PP_1:
+		case IDC_EDIT_PP_2:
+		case IDC_EDIT_PP_3:
+		case IDC_EDIT_PP_4:
+		case IDC_EDIT_PP_5:
+		case IDC_EDIT_PP_6:
+		case IDC_EDIT_PP_7:
+		case IDC_EDIT_PP_8:
+			break;
+
+		case IDC_EDIT_PROGRAM_PASS:
+		case IDC_EDIT_PROGRAM_FAIL:
+		case IDC_EDIT_PROGRAM_CNT:
+		case IDC_EDIT_PROGRAM_PERCENT:
+
+		case IDC_EDIT_AGING_PASS:
+		case IDC_EDIT_AGING_FAIL:
+		case IDC_EDIT_AGING_CNT:
+		case IDC_EDIT_AGING_PERCENT:
+			break;
+		case IDC_EDIT_LED_HEAT:
+		case IDC_EDIT_LED_COOL:
+		case IDC_EDIT_LED_COLOR:
+			break;
+		case IDC_CHECK_PCB_POWER_1:
+			if(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_1])
+			{
+				return G_RedBrush;
+			}
+			else
+			{
+				 return G_bkBrush;
+			}
+			break;
+		case IDC_CHECK_PCB_POWER_2:
+			if(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_2])
+			{
+				return G_RedBrush;
+			}
+			else
+			{
+				 return G_bkBrush;
+			}
+			break;
+		case IDC_CHECK_PCB_POWER_3:
+			if(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_3])
+			{
+				return G_RedBrush;
+			}
+			else
+			{
+				 return G_bkBrush;
+			}
+			break;
+		case IDC_CHECK_PCB_POWER_4:
+			if(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_4])
+			{
+				return G_RedBrush;
+			}
+			else
+			{
+				return  G_bkBrush;
+			}
+			break;
+		case IDC_CHECK_PCB_POWER_5:
+			if(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_5])
+			{
+				return G_RedBrush;
+			}
+			else
+			{
+				 return G_bkBrush;
+			}
+			break;
+		case IDC_CHECK_PCB_POWER_6:
+			if(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_6])
+			{
+				return G_RedBrush;
+			}
+			else
+			{
+				 return G_bkBrush;
+			}
+			break;
+		case IDC_CHECK_PCB_POWER_7:
+			if(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_7])
+			{
+				return G_RedBrush;
+			}
+			else
+			{
+				 return G_bkBrush;
+			}
+			break;
+		case IDC_CHECK_PCB_POWER_8:
+			if(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_8])
+			{
+				return G_RedBrush;
+			}
+			else
+			{
+				 return G_bkBrush;
+			}
+			break;
+
 	default:
 		return G_bkBrush;
 	
@@ -5661,3 +5979,45 @@ void CHotLong_PCBDlg::OnEnSetfocusEditLedColorBottom()
 	}
 }
 
+void CHotLong_PCBDlg::WriteMES(int ID, bool Pass)
+{
+	CFile f;
+	if(m_Device_HotLong_PCB[ID].m_BarCode.GetLength() > 0)
+	{
+		CString filename = _T("d:\\data\\") + m_Device_HotLong_PCB[ID].m_BarCode + _T(".csv");
+		char buf[100];
+		if(f.Open(filename,CFile::modeCreate | CFile::modeNoTruncate | CFile::modeReadWrite))
+		{
+			f.SeekToBegin();
+			memset(buf,0,sizeof(buf));
+			sprintf(buf,"%s","条码内容,测试时间,测试结果,\r\n");
+			f.Write(buf,strlen(buf));
+			memset(buf,0,sizeof(buf));
+			for(int i = 0; i < m_Device_HotLong_PCB[ID].m_BarCode.GetLength(); i++)
+			{
+				buf[i] = m_Device_HotLong_PCB[ID].m_BarCode.GetAt(i);
+			}
+			f.Write(buf,strlen(buf));
+			f.Write(",",1);
+
+			memset(buf,0,sizeof(buf));
+			CTime cur = CTime::GetCurrentTime();
+			sprintf(buf,"%d/%d/%d %d:%d:%d",cur.GetYear(),cur.GetMonth(),cur.GetDay(),cur.GetHour(),cur.GetMinute(),cur.GetSecond());
+			f.Write(buf,strlen(buf));
+			f.Write(",",1);
+
+			if(Pass)
+			{
+				f.Write("OK",2);
+				f.Write(",",1);
+			}
+			else
+			{
+				f.Write("NG",2);
+				f.Write(",",1);
+			}
+			f.Write("\r\n",2);
+			f.Close();
+		}
+	}
+}

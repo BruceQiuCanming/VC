@@ -46,15 +46,15 @@
 */
 
 #define Comm_Device_HuiKong_DIO_MSG_ID	(COMM_MSG + 0)
-#define Comm_PROGRAM_MSG_ID (COMM_MSG + 1)
-#define Comm_AGING_MSG_ID_1	(Comm_PROGRAM_MSG_ID + 1)
-#define Comm_AGING_MSG_ID_2	(Comm_PROGRAM_MSG_ID + 2)
-#define Comm_AGING_MSG_ID_3	(Comm_PROGRAM_MSG_ID + 3)
-#define Comm_AGING_MSG_ID_4	(Comm_PROGRAM_MSG_ID + 4)
-#define Comm_AGING_MSG_ID_5	(Comm_PROGRAM_MSG_ID + 5)
-#define Comm_AGING_MSG_ID_6	(Comm_PROGRAM_MSG_ID + 6)
-#define Comm_AGING_MSG_ID_7	(Comm_PROGRAM_MSG_ID + 7)
-#define Comm_AGING_MSG_ID_8	(Comm_PROGRAM_MSG_ID + 8)
+#define Comm_PROGRAM_MSG_ID				(COMM_MSG + 1)
+#define Comm_AGING_MSG_ID_1				(Comm_PROGRAM_MSG_ID + 1)
+#define Comm_AGING_MSG_ID_2				(Comm_PROGRAM_MSG_ID + 2)
+#define Comm_AGING_MSG_ID_3				(Comm_PROGRAM_MSG_ID + 3)
+#define Comm_AGING_MSG_ID_4				(Comm_PROGRAM_MSG_ID + 4)
+#define Comm_AGING_MSG_ID_5				(Comm_PROGRAM_MSG_ID + 5)
+#define Comm_AGING_MSG_ID_6				(Comm_PROGRAM_MSG_ID + 6)
+#define Comm_AGING_MSG_ID_7				(Comm_PROGRAM_MSG_ID + 7)
+#define Comm_AGING_MSG_ID_8				(Comm_PROGRAM_MSG_ID + 8)
 
 
 typedef enum
@@ -84,6 +84,14 @@ typedef enum
 
 
 }PCB_TYPE;
+
+typedef struct
+{
+	CString     m_FriendName;
+	CString     m_FileName;
+}COMM_FRIENDNAME_FILENAME;
+
+typedef CArray<COMM_FRIENDNAME_FILENAME,COMM_FRIENDNAME_FILENAME> CCommArray;
 
 typedef struct
 {
@@ -187,6 +195,7 @@ protected:
 	HICON m_hIcon;
 
 	// 生成的消息映射函数
+	void WriteMES(int ID, bool Pass);
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
@@ -194,6 +203,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	CParaDlg			m_ParaDlg;
+	CParaDlg			*m_ParaDlg_NoModal;
 	CStatic				m_staticScreen;
 	CListBox			m_ListCtrl;
 	CCaptureVideo		m_cap;
@@ -322,6 +332,10 @@ public:
 	CString m_Led_Color;
 	CString m_Led_Heat;
 	
+	bool m_Led_Cool_IsOK;
+	bool m_Led_Color_IsOK;
+	bool m_Led_Heat_IsOK;
+	bool m_Program_RS485_IsOK;
 	afx_msg void OnEnChangeEditLedNumLeft_1();
 	afx_msg void OnEnChangeEditLedNumRight_1();
 	afx_msg void OnEnChangeEditLedNumTop_1();

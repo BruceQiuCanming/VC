@@ -54,8 +54,7 @@ public:
 	
 	bool		m_IsTaking;
 
-	CTime		m_LedAnswerTime[2];
-	CTime		m_MeterAnswerTime;
+
 	
 	void	DrawBiMetalLED(void);
 
@@ -88,6 +87,8 @@ public:
 	
 	//}}AFX_DATA
 
+
+	void CSwitchDlg::Send_Better_MES(RECORD *record);
 
 	afx_msg void OnCheckStartTest(void);
 	afx_msg void OnButtonTakeout(void);

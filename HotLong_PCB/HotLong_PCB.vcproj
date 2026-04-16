@@ -67,6 +67,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="PSAPI.LIB"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="Strmiids.lib;Quartz.lib"
 				GenerateDebugInformation="true"
@@ -148,6 +149,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="PSAPI.LIB"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="2"

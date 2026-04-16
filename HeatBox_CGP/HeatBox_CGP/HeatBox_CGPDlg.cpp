@@ -906,7 +906,22 @@ UINT CHeatBox_CGPDlg::GetUsedMemory(void)
 void CHeatBox_CGPDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	CTime cur = CTime::GetCurrentTime();
+
+	/*
+	static int last_second = 0;
+	static float last_temp = 10.0f;
+	TEMP_RECORD tr;
 	
+	if(last_second != cur.GetSecond())
+	{
+		tr.time = cur.GetTime();
+		last_temp += 10.0f/60.0f;
+		tr.temp = last_temp;
+		::G_TempRecordArray.Add(tr);
+		this->DrawTempCurve();
+	}
+	*/
 	if(this->m_NewBarcode.GetLength() >= 42)
 	{
 		m_NewBarcode = m_NewBarcode.Right(42);
@@ -969,7 +984,7 @@ void CHeatBox_CGPDlg::OnTimer(UINT_PTR nIDEvent)
 
 
 	CString s;
-	CTime cur = CTime::GetCurrentTime();
+//	CTime cur = CTime::GetCurrentTime();
 
 
 	if(m_MeterID == 0)
@@ -1427,7 +1442,11 @@ LRESULT CHeatBox_CGPDlg::OnComm(WPARAM wParam,LPARAM lParam)
 						tr.time     =   cur.GetTime();
 						last_time	=	cur;
 
-						::G_TempRecordArray.Add(tr);  
+						::G_TempRecordArray.Add(tr); 
+						if(G_TempRecordArray.GetSize() > 60 * 60)
+						{
+							G_TempRecordArray.RemoveAt(0);
+						}
 					}
 				}
 				
@@ -2743,7 +2762,15 @@ void CHeatBox_CGPDlg::DrawTempCurve(void)
 			}
 		}
 		max_temp += 5.0f;
+		int v = max_temp;
+		v = (v / 5) * 5;
+		max_temp = v;
+
 		min_temp -= 2.0f;
+		v = min_temp;
+		v = (v / 5) * 5;
+		min_temp = v;
+
 		
 		max_temp = (int)(max_temp);
 		min_temp = (int)(min_temp);
@@ -2759,51 +2786,52 @@ void CHeatBox_CGPDlg::DrawTempCurve(void)
 		for(int i = 0; i <= 4; i++)
 		{
 			s.Format(_T("%.1f"),min_temp + y_gap * i );
-			MemDC.TextOutW(0,data_area_Rect.bottom - data_area_Rect.Height() * 0.8 * i / 4 - 20,s);
+			MemDC.TextOutW(0,data_area_Rect.bottom * 0.9 - data_area_Rect.Height() * 0.8 * i / 4 - 20,s);
 
-			MemDC.MoveTo( 0,					data_area_Rect.bottom - data_area_Rect.Height() * 0.8 * i/ 4);
-			MemDC.LineTo(data_area_Rect.right,	data_area_Rect.bottom - data_area_Rect.Height() * 0.8 * i/ 4);
+			MemDC.MoveTo( 0,					data_area_Rect.bottom * 0.9 - data_area_Rect.Height() * 0.8 * i/ 4);
+			MemDC.LineTo(data_area_Rect.right,	data_area_Rect.bottom * 0.9 - data_area_Rect.Height() * 0.8 * i/ 4);
 		}
 
 		MemDC.SelectObject(&DrawTempCurve_Font2);
 
-		for(int i = 1; i < 10; i++)
+		for(int i = 1; i < 30; i++)
 		{
-	
-			MemDC.MoveTo(data_area_Rect.Width() * i / 10, data_area_Rect.Height() * 0.2);
-			MemDC.LineTo(data_area_Rect.Width() * i / 10, data_area_Rect.Height());
+			MemDC.MoveTo(data_area_Rect.Width() * i / 30, data_area_Rect.Height() * 0.1);
+			MemDC.LineTo(data_area_Rect.Width() * i / 30, data_area_Rect.Height() * 0.9);
+			s.Format(_T("%d"),2 * i );
+			MemDC.TextOutW(data_area_Rect.Width() * i / 30,data_area_Rect.Height() * 0.92 , s);
 		}
 
 		pen.DeleteObject(); 
 		pen.CreatePen(PS_SOLID,PEN_WEIGHT, RGB(0xFF,0,0));  		//建立画笔
 		oldpen=MemDC.SelectObject(&pen);
 		int start_id =  - data_area_Rect.Width();
-		int x_gap;
+		float x_gap;
 
 	
-		if(data_area_Rect.Width() >= G_TempRecordArray.GetSize())
+		//if(data_area_Rect.Width() >= G_TempRecordArray.GetSize())
 		{
-			if(G_TempRecordArray.GetSize() > 0)
+			//if(G_TempRecordArray.GetSize() > 0)
 			{
-				x_gap = data_area_Rect.Width() / G_TempRecordArray.GetSize(); 
+				x_gap = data_area_Rect.Width() / (60.0f * 60.0f);//G_TempRecordArray.GetSize(); 
 			}
-			else
+			//else
 			{
-				x_gap = data_area_Rect.Width() ; 
+			//	x_gap = data_area_Rect.Width() ; 
 			}
 
 			if(G_TempRecordArray.GetSize() > 0)
 			{
-				MemDC.MoveTo(0,data_area_Rect.bottom - (G_TempRecordArray.GetAt(0).temp  - min_temp) * data_area_Rect.Height() * 0.8 /(max_temp - min_temp));
+				MemDC.MoveTo(0,data_area_Rect.bottom * 0.9 - (G_TempRecordArray.GetAt(0).temp  - min_temp) * data_area_Rect.Height() * 0.8 /(max_temp - min_temp));
 				for(int i = 0; i < G_TempRecordArray.GetSize(); i++)
 				{
-					MemDC.LineTo(i*x_gap,data_area_Rect.bottom  - (G_TempRecordArray.GetAt(i).temp  - min_temp) * data_area_Rect.Height() * 0.8 /(max_temp - min_temp));
+					MemDC.LineTo( i * x_gap,data_area_Rect.bottom * 0.9 - (G_TempRecordArray.GetAt(i).temp  - min_temp) * data_area_Rect.Height() * 0.8 /(max_temp - min_temp));
 					 
 				}
 			}
 
 		}
-		else
+		/*else
 		{
 			
 			x_gap = G_TempRecordArray.GetSize() / data_area_Rect.Width() + 1 ; 
@@ -2817,7 +2845,7 @@ void CHeatBox_CGPDlg::DrawTempCurve(void)
 				}
 			}
 
-		}
+		}*/
 
 		int hh,mm,ss;
 		CTime cur = CTime::GetCurrentTime();
@@ -2837,7 +2865,7 @@ void CHeatBox_CGPDlg::DrawTempCurve(void)
 				cur.Format(_T("%Y/%m/%d %H:%M:%S")), hh,mm,ss , m_Comm.m_WriteCommCount,m_Comm.m_ReadCommCount); 
 			break;
 		}
-		MemDC.TextOutW(data_area_Rect.Width() / 3, 10,s);  
+		MemDC.TextOutW(data_area_Rect.Width() / 3, 5,s);  
 
 	}
 	else  //
@@ -3199,14 +3227,14 @@ void CHeatBox_CGPDlg::DrawTempCurve(void)
 					switch(G_NormalConfigPara.Language)
 					{
 					case 0:
-						s.Format(_T("%s 接通:%5.1f(%3.1f ~ %3.1f) 差动:"),
+						s.Format(_T("%s 断开:%5.1f(%3.1f ~ %3.1f) 差动:"),
 						testPointStr[TestPoint][0],
 						m_TestPara.OpenTemp[i],
 						m_TestPara.OpenTempPlus[i],
 						-m_TestPara.OpenTempMinus[i]);
 						break;
 					case 1:
-						s.Format(_T("%s Close:%5.1f(%3.1f ~ %3.1f) Gap:"),
+						s.Format(_T("%s Open:%5.1f(%3.1f ~ %3.1f) Gap:"),
 							testPointStr[TestPoint][1],
 							m_TestPara.OpenTemp[i],
 							m_TestPara.OpenTempPlus[i],
@@ -3234,14 +3262,14 @@ void CHeatBox_CGPDlg::DrawTempCurve(void)
 					switch(G_NormalConfigPara.Language)
 					{
 					case 0:
-						s.Format(_T("        断开:%5.1f(%3.1f ~ %3.1f) 循环: %d"),
+						s.Format(_T("        接通:%5.1f(%3.1f ~ %3.1f) 循环: %d"),
 							m_TestPara.CloseTemp[i],
 							m_TestPara.CloseTempPlus[i],
 							-m_TestPara.CloseTempMinus[i],
 							m_TestPara.Cycle[i]);
 						break;
 					case 1:
-						s.Format(_T("      Open:%5.1f(%3.1f ~ %3.1f) Cycle: %d"),
+						s.Format(_T("      Close:%5.1f(%3.1f ~ %3.1f) Cycle: %d"),
 							m_TestPara.CloseTemp[i],
 							m_TestPara.CloseTempPlus[i],
 							-m_TestPara.CloseTempMinus[i],

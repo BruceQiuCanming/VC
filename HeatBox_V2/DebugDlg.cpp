@@ -831,6 +831,7 @@ BOOL CDebugDlg::OnInitDialog()
 		this->m_ComboInterfaceBoardType.AddString(G_InterfacePcbTypeName[i].name);
 	}
 	
+	m_ComboTM7705_OSC.SetCurSel(G_NormalConfigPara[m_BoxNr].TM7705_NoOSC);
 	
 	ShowPCBType();
 
@@ -2574,6 +2575,8 @@ void CDebugDlg::OnBnClickedButtonUpdateFirmware()
 		::G_SpeechArray.Add (s);
 	}
 	CProgramDlg dlg;
+	dlg.m_BoxNr = m_BoxNr;
+	dlg.m_TM7705_OSC = ::G_NormalConfigPara[m_BoxNr].TM7705_NoOSC;
 	if(dlg.DoModal() == IDOK)
 	{
 	
