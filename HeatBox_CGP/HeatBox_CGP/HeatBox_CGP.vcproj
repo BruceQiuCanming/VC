@@ -149,7 +149,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\HeatBox_CGP.exe"
+				OutputFile="$(OutDir)\HeatBox_CGP_$(Date)_$(Time).exe"
 				LinkIncremental="1"
 				UACExecutionLevel="2"
 				GenerateDebugInformation="true"

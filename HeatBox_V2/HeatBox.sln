@@ -6,28 +6,25 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug  128|Win32 = Debug  128|Win32
-		Debug XinQiNeng|Win32 = Debug XinQiNeng|Win32
 		Debug 东莞贝特|Win32 = Debug 东莞贝特|Win32
+		Debug 拓邦 越南|Win32 = Debug 拓邦 越南|Win32
 		Release 128|Win32 = Release 128|Win32
-		Release ChengHong 128|Win32 = Release ChengHong 128|Win32
 		Release 东莞贝特|Win32 = Release 东莞贝特|Win32
-		XinQiNeng|Win32 = XinQiNeng|Win32
+		Release 拓邦 越南|Win32 = Release 拓邦 越南|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug  128|Win32.ActiveCfg = Debug  128|Win32
 		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug  128|Win32.Build.0 = Debug  128|Win32
-		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug XinQiNeng|Win32.ActiveCfg = Debug XinQiNeng|Win32
-		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug XinQiNeng|Win32.Build.0 = Debug XinQiNeng|Win32
 		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug 东莞贝特|Win32.ActiveCfg = Debug 东莞贝特|Win32
 		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug 东莞贝特|Win32.Build.0 = Debug 东莞贝特|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug 拓邦 越南|Win32.ActiveCfg = Debug 拓邦 越南|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Debug 拓邦 越南|Win32.Build.0 = Debug 拓邦 越南|Win32
 		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release 128|Win32.ActiveCfg = Release 128|Win32
 		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release 128|Win32.Build.0 = Release 128|Win32
-		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release ChengHong 128|Win32.ActiveCfg = Release ChengHong 128|Win32
-		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release ChengHong 128|Win32.Build.0 = Release ChengHong 128|Win32
 		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release 东莞贝特|Win32.ActiveCfg = Release 东莞贝特|Win32
 		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release 东莞贝特|Win32.Build.0 = Release 东莞贝特|Win32
-		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.XinQiNeng|Win32.ActiveCfg = XinQiNeng|Win32
-		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.XinQiNeng|Win32.Build.0 = XinQiNeng|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release 拓邦 越南|Win32.ActiveCfg = Release 拓邦 越南|Win32
+		{B30BFEDE-7C2C-4A7F-B61D-B959C0A31EBA}.Release 拓邦 越南|Win32.Build.0 = Release 拓邦 越南|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

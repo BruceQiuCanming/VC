@@ -22,6 +22,7 @@
 #include "atlstr.h"
 #include "string.h"
 #include <atlimage.h>
+#include "TopbandVietnamMesDlg.h"
 
 #pragma  comment(lib,"shlwapi.lib")
 
@@ -1010,59 +1011,24 @@ extern CSorterPlcDlg	G_SorterPlcDlg;
 
 void CSwitchDlg::OnCheckStartTest() 
 {
-	//PrintDeliveryNote();
+
+	
+#ifdef _TopBand_Vietnam
+	/*CTopbandVietnamMesDlg mesdlg;
+	if(mesdlg.DoModal() == IDOK)
+	{
+	}*/
+
+//	CTopbandVietnamMesDlg::MES_Check();
+
+	
+	//this->m_WorkMode.SaveTestRecord(m_BoxNr);
+
+
 	//return;
-	/*
-#ifdef _DONGGUAN_BETTER
-	RECORD record;
-
-	memset(&record,0,sizeof(record));
-
-	for(int i = 0; i < 10; i++)
-	{
-		record.TestResult[i].IsUsed		= true;
-		record.TestResult[i].IsOpenned	= true;
-		record.TestResult[i].OpenTemp	= 100.0f + i;
-		record.TestResult[i].IsClosed   = true;
-		record.TestResult[i].CloseTemp  = 60.0f  + i;
-	}
-
-	for(int i = 20; i < 30; i++)
-	{
-		record.TestResult[i].IsUsed		= true;
-		record.TestResult[i].IsOpenned	= true;
-		record.TestResult[i].OpenTemp	= 100.0f + i;
-		record.TestResult[i].IsClosed   = false;
-		record.TestResult[i].CloseTemp  = 60.0f  + i;
-	}
-
-	for(int i = 50; i < 60; i++)
-	{
-		record.TestResult[i].IsUsed		= true;
-		record.TestResult[i].IsOpenned	= true;
-		record.TestResult[i].OpenTemp	= 100.0f + i;
-		record.TestResult[i].IsClosed   = false;
-		record.TestResult[i].CloseTemp  = 60.0f  + i;
-		record.TestResult[i].IsOpenFlash = true;
-	}
- 
-	CTimeSpan	span	= CTime::GetCurrentTime() - STD_TIME; 
-	record.StartTime   	= span.GetTotalMinutes();
-
-	record.ConfigPara = this->m_SwitchConfigPara.para;
-
-	CDongguanBetterMesMsgDlg MesMsgDlg;
-	MesMsgDlg.DoModal();
 
 	
-	Send_Better_MES(&record);
-
-	
-	
-	return;
 #endif
-*/
-
 	m_WorkMode.m_SwitchConfigPara = this->m_SwitchConfigPara.para;
 	m_WorkMode.OnClickStartButton( this,m_BoxNr,m_CurTemp,m_SwitchConfigPara.para);
 

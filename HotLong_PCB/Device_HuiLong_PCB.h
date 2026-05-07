@@ -17,7 +17,8 @@ public :
 	void DealOnComm(unsigned char *Data,int DataLen);
     void SetBaudrate(CComm *comm);
 	void SetSv(int Sv);
-	void ReadData(void);
+	void ReadData_X90(void);
+	void ReadData_BIG_AMP(void);
 	void SetSleepMode(bool Sleep);
 	int					m_Pv;
 	int					m_Sv;

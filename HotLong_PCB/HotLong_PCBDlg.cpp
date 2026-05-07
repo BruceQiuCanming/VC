@@ -790,6 +790,13 @@ void CHotLong_PCBDlg::ReMoveWindows_BIG_AMP(void)
 
 			this->m_staticScreen.MoveWindow(0,0,CAMERA_WIDTH,CAMERA_HEIGHT,true);
 
+			w = this->GetDlgItem(IDC_STATIC_PV_0);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_STATIC_SV_0);w->ShowWindow(SW_HIDE);
+
+			w = this->GetDlgItem(IDC_EDIT_Pv_0);w->ShowWindow(SW_HIDE);
+			w = this->GetDlgItem(IDC_EDIT_Sv_0);w->ShowWindow(SW_HIDE);
+
+
 			w = this->GetDlgItem(IDC_STATIC_PP_1);w->ShowWindow(SW_HIDE);
 			w = this->GetDlgItem(IDC_STATIC_PP_2);w->ShowWindow(SW_HIDE);
 			w = this->GetDlgItem(IDC_STATIC_PP_3);w->ShowWindow(SW_HIDE);
@@ -2399,6 +2406,7 @@ LRESULT CHotLong_PCBDlg::OnComm_Device_HuiKong_DIO(WPARAM wParam, LPARAM lParam)
 	m_Device_HuiKong_DIO.DealOnComm((unsigned char *)wParam,(int)lParam);
 	
 	
+	
 	this->m_CheckPCB_Button_Set.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID]);
 	this->m_CheckPCB_Button_Plus.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID]);
 	this->m_CheckPCB_Button_Minus.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID]);
@@ -2414,7 +2422,26 @@ LRESULT CHotLong_PCBDlg::OnComm_Device_HuiKong_DIO(WPARAM wParam, LPARAM lParam)
 	m_Device_HotLong_PCB[6].m_CheckPCB_Power.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_6]);
 	m_Device_HotLong_PCB[7].m_CheckPCB_Power.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_7]);
 	m_Device_HotLong_PCB[8].m_CheckPCB_Power.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_8]);
+	
+	if(m_ParaDlg.IsWindowVisible())
+	{
+		m_ParaDlg.m_Check_ProgramSet.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID]);
+		m_ParaDlg.m_Check_ProgramIncrease.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID]);
+		m_ParaDlg.m_Check_ProgramMinus.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID]);
+		m_ParaDlg.m_Check_TestNeedle.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_TEST_NEEDLE_ID]);
+		m_ParaDlg.m_Check_ProgramStart.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID]);
 		
+		m_ParaDlg.m_CheckPower_1.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_1]);
+		m_ParaDlg.m_CheckPower_2.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_2]);
+		m_ParaDlg.m_CheckPower_3.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_3]);
+		m_ParaDlg.m_CheckPower_4.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_4]);
+		m_ParaDlg.m_CheckPower_5.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_5]);
+		m_ParaDlg.m_CheckPower_6.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_6]);
+		m_ParaDlg.m_CheckPower_7.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_7]);
+		m_ParaDlg.m_CheckPower_8.SetCheck(m_Device_HuiKong_DIO.m_Y[m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_8]);
+	
+	}
+	
 	return 0;//DealOnComm_Device_HuiKong_DIO(wParam, lParam, this);
 
 }
@@ -2952,7 +2979,7 @@ void CHotLong_PCBDlg::WorkMode_Program_BIG_AMP(void)
 				int val = _ttoi(msg);
 				if (val > 0 && val < 100)
 				{
-					m_Device_HotLong_PCB[0].m_SubMode;
+					m_Device_HotLong_PCB[0].m_SubMode = PROGRAM_KEY_MODE_SET_DOWN;
 					m_Device_HotLong_PCB[0].m_SubModeBeginTime = CTime::GetCurrentTime();
 					SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID, false);
 					SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID, true);
@@ -3454,16 +3481,16 @@ void CHotLong_PCBDlg::WorkMode_BIG_AMP(int ID)
 				{
 					m_Device_HotLong_PCB[ID].m_SubModeBeginTime = cur;
 					m_Device_HotLong_PCB[ID].m_SubMode ++;
-					m_ListMsg[ID].InsertString(0, sCur + _T("等待2分钟,温度:80--120"));
+					m_ListMsg[ID].InsertString(0, sCur + _T("等待4分钟,温度:80--120"));
 				}
 			}
 			break;
 		case 2:
 			span = cur - m_Device_HotLong_PCB[ID].m_SubModeBeginTime;
-			s.Format(_T("等待2分钟，温度:80--120，%02d:%02d"),span.GetMinutes(),span.GetSeconds());
+			s.Format(_T("等待4分钟，温度:80--120，%02d:%02d"),span.GetMinutes(),span.GetSeconds());
 			m_Device_HotLong_PCB[ID].m_EditMsg = s;
 			this->UpdateData(false);
-			if (span.GetTotalSeconds() > 120)
+			if (span.GetTotalSeconds() > 240)
 			{
 				m_Device_HotLong_PCB[ID].m_SubModeBeginTime = cur;
 				m_Device_HotLong_PCB[ID].m_SubMode ++;
@@ -3473,6 +3500,8 @@ void CHotLong_PCBDlg::WorkMode_BIG_AMP(int ID)
 			{
 				if (m_Pv[ID] < 80 || m_Pv[ID] > 120)
 				{
+					s.Format(_T("  %d℃"),m_Pv[ID]);
+					m_ListMsg[ID].InsertString(0, sCur + s);
 					SetResult(ID, false);
 				}
 			}
@@ -3495,6 +3524,8 @@ void CHotLong_PCBDlg::WorkMode_BIG_AMP(int ID)
 			{
 				if (m_Pv[ID] < 99 || m_Pv[ID] > 101)
 				{
+					s.Format(_T("  %d℃"),m_Pv[ID]);
+					m_ListMsg[ID].InsertString(0, sCur + s);
 					SetResult(ID, false);
 				}
 			}
@@ -3507,6 +3538,8 @@ void CHotLong_PCBDlg::WorkMode_BIG_AMP(int ID)
 			span = cur - m_Device_HotLong_PCB[ID].m_SubModeBeginTime;
 			if (span.GetTotalSeconds() > 120)
 			{
+					s.Format(_T("  %d℃"),m_Pv[ID]);
+					m_ListMsg[ID].InsertString(0, sCur + s);
 				    SetResult(ID, false);
 			}
 			else
@@ -4305,7 +4338,19 @@ void CHotLong_PCBDlg::TimerSend(int CommNr)
 
 	if(m_Device_HotLong_PCB[CommNr].SendWaitCmd(&m_Device_HotLong_PCB[CommNr])  == 0 )
 	{
-		m_Device_HotLong_PCB[CommNr].ReadData();
+		switch(m_ConfigData.m_Pcb_Type)
+		{
+		case PCB_TYPE_BIG_AMP:
+		case PCB_TYPE_BIG_AMP_NO_BARCODE:
+
+			m_Device_HotLong_PCB[CommNr].ReadData_BIG_AMP();
+			break;
+		case PCB_TYPE_X90:
+	    case PCB_TYPE_X90_NO_BARCODE:
+			m_Device_HotLong_PCB[CommNr].ReadData_X90();
+			break;
+		}
+		
 	}
 
 	this->m_ParaDlg.DisplaySend_hotLong(CommNr,m_Device_HotLong_PCB[CommNr].m_Comm->m_LastSendCmd);

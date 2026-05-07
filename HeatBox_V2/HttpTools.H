@@ -10,6 +10,8 @@
 #include "afxinet.h"
  
 
+static const wchar_t* IE_AGENT = L"Changzhou Runbang";
+static const wchar_t* Char_AGENT =  L"Changzhou Runbang";
 
 
 enum HttpResult
@@ -33,7 +35,6 @@ enum HttpResult
 
 //namespace HttpTools
 
-static const wchar_t* IE_AGENT = L"Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727)";
 
 class HttpTools
 {
@@ -57,6 +58,15 @@ public:
 		CString postData,  //发送的数据
 		CString response, //回复
 		CString strAgent = IE_AGENT, //agent 默认是IE  （IE_AGENT）
+		bool IsOkMsg = false
+		);
+
+
+	static int HttpRequest(CString strMethod, //get or post
+		CString strUrl,  //请求地址
+		char* postData,  //发送的数据
+		CString &response, //回复
+		CString strAgent = Char_AGENT, //agent 默认是IE  （IE_AGENT）
 		bool IsOkMsg = false
 		);
 

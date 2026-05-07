@@ -290,7 +290,7 @@ BOOL CHotLong_PCBApp::PreTranslateMessage(MSG *pMsg)
 		switch(pMsg->wParam)
 		{
 		case VK_F10:
-			G_MainDlg->m_ParaDlg_NoModal->Create(
+			
 			break;
 		case VK_F11:
 			//if(!G_MainDlg->m_ParaDlg.IsWindowVisible())

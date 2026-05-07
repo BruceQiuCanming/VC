@@ -376,6 +376,20 @@
 #define IDC_COMBO_PLC_Y_PLUS_KEY        1261
 #define IDC_STATIC_TEST_MINUS_KEY       1262
 #define IDC_COMBO_PLC_Y_MINUS_KEY       1263
+#define IDC_CHECK_POWER_1               1265
+#define IDC_CHECK_POWER_2               1267
+#define IDC_CHECK_POWER_3               1268
+#define IDC_CHECK_POWER_4               1269
+#define IDC_CHECK_POWER_5               1270
+#define IDC_CHECK_POWER_6               1271
+#define IDC_CHECK_POWER_7               1272
+#define IDC_CHECK_POWER_8               1273
+#define IDC_CHECK_TEST_NEEDLE           1274
+#define IDC_CHECK_PROGRAM_START         1275
+#define IDC_CHECK_PROGRAM_SET           1276
+#define IDC_CHECK_PROGRAM_INCREASE      1277
+#define IDC_CHECK_PROGRAM_INCREASE2     1278
+#define IDC_CHECK_PROGRAM_MINUS         1278
 
 // Next default values for new objects
 // 
@@ -383,7 +397,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        132
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1233
+#define _APS_NEXT_CONTROL_VALUE         1275
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

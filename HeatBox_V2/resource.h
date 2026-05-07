@@ -89,6 +89,7 @@
 #define IDR_BIMETAL24_V3_A              231
 #define IDR_BIMETAL24_V3_B              232
 #define IDD_DIALOG_DONGGUAN_BETTER_MES_MESSAGE 233
+#define IDD_TOPBAND_VIATNAM_MES_DLG     234
 #define IDC_TAB1                        1000
 #define IDC_TAB2                        1001
 #define IDC_TAB3                        1002
@@ -575,30 +576,41 @@
 #define IDC_STATIC_LOW_LEVEL_OUTPUT_CYCLINDER 1268
 #define IDC_EDIT_PID_D_2                1268
 #define IDC_IPADDRESS_LOCAL             1268
+#define IDC_EDIT_site                   1268
 #define IDC_STATIC_HIGH_LEVEL_INPUT_CYCLINDER 1269
 #define IDC_EDIT_PV_3                   1269
 #define IDC_EDIT_WORKSTATION_NAME       1269
+#define IDC_EDIT_operation              1269
 #define IDC_STATIC_LOW_LEVEL_FAIL_CYCLINDER 1270
 #define IDC_EDIT_SV_3                   1270
 #define IDC_EDIT_WORKSHEET_CODE         1270
+#define IDC_EDIT_resrce                 1270
 #define IDC_STATIC_LOW_LEVEL_TEST_CYCLINDER 1271
 #define IDC_EDIT_MSG_3                  1271
+#define IDC_EDIT_sfcs                   1271
 #define IDC_STATIC_HIGH_LEVEL_OUTPUT_CYCLINDER 1272
 #define IDC_EDIT_PID_P_3                1272
+#define IDC_EDIT_URL_1                  1272
 #define IDC_STATIC_HIGH_LEVEL_PASS_CYCLINDER 1273
 #define IDC_EDIT_PID_I_3                1273
 #define IDC_EDIT_PRODUCT_CODE           1273
+#define IDC_EDIT_URL_2                  1273
 #define IDC_STATIC_IS_HAS_SWITCH        1274
 #define IDC_EDIT_PID_D_3                1274
 #define IDC_EDIT_PRODUCT_NAME           1274
+#define IDC_EDIT_barcode                1274
 #define IDC_STATIC_HIGH_LEVEL_FAIL_CYCLINDER 1275
 #define IDC_EDIT_PV_4                   1275
+#define IDC_EDIT_userid                 1275
 #define IDC_STATIC_LOW_LEVEL_TEST_CYCLINDER2 1276
 #define IDC_STATIC_HIGH_LEVEL_TEST_CYCLINDER2 1276
 #define IDC_EDIT_SV_4                   1276
 #define IDC_STATIC_HIGH_LEVEL_TEST_CYCLINDER 1276
+#define IDC_EDIT_password               1276
 #define IDC_EDIT_MSG_4                  1277
+#define IDC_EDIT_shop_order             1277
 #define IDC_EDIT_PID_P_4                1278
+#define IDC_BUTTON_UPLOAD               1278
 #define IDC_EDIT_PID_I_4                1279
 #define IDC_EDIT_PID_D_4                1280
 #define IDC_EDIT_PV_5                   1281
@@ -769,9 +781,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        234
+#define _APS_NEXT_RESOURCE_VALUE        235
 #define _APS_NEXT_COMMAND_VALUE         32774
-#define _APS_NEXT_CONTROL_VALUE         1268
+#define _APS_NEXT_CONTROL_VALUE         1279
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -59,7 +59,7 @@ BEGIN_MESSAGE_MAP(CKeyBoardDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_P, &CKeyBoardDlg::OnBnClickedButtonP)
 	ON_BN_CLICKED(IDC_BUTTON_Q, &CKeyBoardDlg::OnBnClickedButtonQ)
 	ON_BN_CLICKED(IDC_BUTTON_R, &CKeyBoardDlg::OnBnClickedButtonR)
-	ON_BN_CLICKED(IDC_BUTTON_R, &CKeyBoardDlg::OnBnClickedButtonS)
+	ON_BN_CLICKED(IDC_BUTTON_S, &CKeyBoardDlg::OnBnClickedButtonS)
 	ON_BN_CLICKED(IDC_BUTTON_T, &CKeyBoardDlg::OnBnClickedButtonT)
 
 	ON_BN_CLICKED(IDC_BUTTON_U, &CKeyBoardDlg::OnBnClickedButtonU)
@@ -76,6 +76,7 @@ BEGIN_MESSAGE_MAP(CKeyBoardDlg, CDialog)
 
 
 
+	ON_BN_CLICKED(IDOK, &CKeyBoardDlg::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 
@@ -410,3 +411,9 @@ void CKeyBoardDlg::OnBnClickedButton_CLEAR()
 
 }
 
+
+void CKeyBoardDlg::OnBnClickedOk()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	OnOK();
+}

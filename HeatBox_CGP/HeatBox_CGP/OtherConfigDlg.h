@@ -1,4 +1,5 @@
 #pragma once
+#include "afxwin.h"
 
 
 // COtherConfigDlg ¶Ô»°¿ò
@@ -27,4 +28,8 @@ public:
 	afx_msg void OnBnClickedRadioCom6();
 	afx_msg void OnBnClickedRadioCom7();
 	afx_msg void OnBnClickedRadioCom8();
+
+	virtual BOOL COtherConfigDlg::OnInitDialog();
+
+	int m_RadioComm1;
 };

@@ -66,4 +66,5 @@ public:
 	afx_msg void OnBnClickedButton_CLEAR();
 
 	CString m_Input;
+	afx_msg void OnBnClickedOk();
 };

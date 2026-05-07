@@ -78,6 +78,20 @@ void CParaDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_PLC_Y_SET_KEY, m_Combo_SET_KEY);
 	DDX_Control(pDX, IDC_COMBO_PLC_Y_PLUS_KEY, m_Combo_PLUS_KEY);
 	DDX_Control(pDX, IDC_COMBO_PLC_Y_MINUS_KEY, m_Combo_MINUS_KEY);
+	DDX_Control(pDX, IDC_CHECK_POWER_1, m_CheckPower_1);
+	DDX_Control(pDX, IDC_CHECK_POWER_2, m_CheckPower_2);
+	DDX_Control(pDX, IDC_CHECK_POWER_3, m_CheckPower_3);
+	DDX_Control(pDX, IDC_CHECK_POWER_4, m_CheckPower_4);
+	DDX_Control(pDX, IDC_CHECK_POWER_5, m_CheckPower_5);
+	DDX_Control(pDX, IDC_CHECK_POWER_6, m_CheckPower_6);
+	DDX_Control(pDX, IDC_CHECK_POWER_7, m_CheckPower_7);
+	DDX_Control(pDX, IDC_CHECK_POWER_8, m_CheckPower_8);
+
+	DDX_Control(pDX, IDC_CHECK_TEST_NEEDLE, m_Check_TestNeedle);
+	DDX_Control(pDX, IDC_CHECK_PROGRAM_START, m_Check_ProgramStart);
+	DDX_Control(pDX, IDC_CHECK_PROGRAM_SET, m_Check_ProgramSet);
+	DDX_Control(pDX, IDC_CHECK_PROGRAM_INCREASE, m_Check_ProgramIncrease);
+	DDX_Control(pDX, IDC_CHECK_PROGRAM_MINUS, m_Check_ProgramMinus);
 }
 
 
@@ -114,6 +128,19 @@ BEGIN_MESSAGE_MAP(CParaDlg, CDialog)
 	ON_CBN_SELENDOK(IDC_COMBO_PLC_Y_SET_KEY, &CParaDlg::OnCbnSelendokComboPlcYSetKey)
 	ON_CBN_SELENDOK(IDC_COMBO_PLC_Y_PLUS_KEY, &CParaDlg::OnCbnSelendokComboPlcYPlusKey)
 	ON_CBN_SELENDOK(IDC_COMBO_PLC_Y_MINUS_KEY, &CParaDlg::OnCbnSelendokComboPlcYMinusKey)
+	ON_BN_CLICKED(IDC_CHECK_POWER_1, &CParaDlg::OnBnClickedCheckPower1)
+	ON_BN_CLICKED(IDC_CHECK_POWER_2, &CParaDlg::OnBnClickedCheckPower2)
+	ON_BN_CLICKED(IDC_CHECK_POWER_3, &CParaDlg::OnBnClickedCheckPower3)
+	ON_BN_CLICKED(IDC_CHECK_POWER_4, &CParaDlg::OnBnClickedCheckPower4)
+	ON_BN_CLICKED(IDC_CHECK_POWER_5, &CParaDlg::OnBnClickedCheckPower5)
+	ON_BN_CLICKED(IDC_CHECK_POWER_6, &CParaDlg::OnBnClickedCheckPower6)
+	ON_BN_CLICKED(IDC_CHECK_POWER_7, &CParaDlg::OnBnClickedCheckPower7)
+	ON_BN_CLICKED(IDC_CHECK_POWER_8, &CParaDlg::OnBnClickedCheckPower8)
+	ON_BN_CLICKED(IDC_CHECK_TEST_NEEDLE, &CParaDlg::OnBnClickedCheckTestNeedle)
+	ON_BN_CLICKED(IDC_CHECK_PROGRAM_START, &CParaDlg::OnBnClickedCheckProgramStart)
+	ON_BN_CLICKED(IDC_CHECK_PROGRAM_SET, &CParaDlg::OnBnClickedCheckProgramSet)
+	ON_BN_CLICKED(IDC_CHECK_PROGRAM_INCREASE, &CParaDlg::OnBnClickedCheckProgramIncrease)
+	ON_BN_CLICKED(IDC_CHECK_PROGRAM_MINUS, &CParaDlg::OnBnClickedCheckProgramMinus)
 END_MESSAGE_MAP()
 
 void EnumSerialPortFriendlyNames(CCommArray& portList);
@@ -576,4 +603,102 @@ void CParaDlg::OnCbnSelendokComboPlcYMinusKey()
 	// TODO: 在此添加控件通知处理程序代码
 	::m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID = this->m_Combo_MINUS_KEY.GetCurSel();
 	::SaveConfig();
+}
+
+void CParaDlg::OnBnClickedCheckPower1()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+		::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_1, 
+			m_CheckPower_1.GetCheck());
+	
+
+}
+
+void CParaDlg::OnBnClickedCheckPower2()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_2, 
+			m_CheckPower_2.GetCheck());
+}
+
+void CParaDlg::OnBnClickedCheckPower3()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_3, 
+			m_CheckPower_3.GetCheck());
+}
+
+void CParaDlg::OnBnClickedCheckPower4()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_4, 
+			m_CheckPower_4.GetCheck());
+}
+
+void CParaDlg::OnBnClickedCheckPower5()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_5, 
+			m_CheckPower_5.GetCheck());
+}
+
+void CParaDlg::OnBnClickedCheckPower6()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_6, 
+			m_CheckPower_6.GetCheck());
+}
+
+
+void CParaDlg::OnBnClickedCheckPower7()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_7, 
+			m_CheckPower_7.GetCheck());
+}
+
+void CParaDlg::OnBnClickedCheckPower8()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_8, 
+			m_CheckPower_8.GetCheck());
+}
+
+void CParaDlg::OnBnClickedCheckTestNeedle()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_TEST_NEEDLE_ID,
+			this->m_Check_TestNeedle.GetCheck());
+}
+
+void CParaDlg::OnBnClickedCheckProgramStart()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID,
+			this->m_Check_ProgramStart.GetCheck());
+}
+
+void CParaDlg::OnBnClickedCheckProgramSet()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID,
+			this->m_Check_ProgramSet.GetCheck());
+}
+
+void CParaDlg::OnBnClickedCheckProgramIncrease()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID,
+			this->m_Check_ProgramIncrease.GetCheck());
+
+}
+
+void CParaDlg::OnBnClickedCheckProgramMinus()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	::G_MainDlg->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID,
+			this->m_Check_ProgramMinus.GetCheck());
 }

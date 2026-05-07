@@ -27,7 +27,7 @@ void CDevice_HuiLong_PCB::DealOnComm(unsigned char *Data,int DataLen)
 
 	if (m_LastSendCmd.cmd == 0x03)
 	{
-		/*if (DataLen == sizeof(MODBUS_RS485_READ_ANSWER_WORD_3))
+		if (DataLen == sizeof(MODBUS_RS485_READ_ANSWER_WORD_3))
 		{
 			MODBUS_RS485_READ_ANSWER_WORD_3* Read_Answer_Word_3 = (MODBUS_RS485_READ_ANSWER_WORD_3*)Data;
 			if(Read_Answer_Word_3->head.RS485_Addr == 0xFE)
@@ -35,15 +35,21 @@ void CDevice_HuiLong_PCB::DealOnComm(unsigned char *Data,int DataLen)
 				CString s;
 				unsigned char* para = (unsigned char*)Read_Answer_Word_3->data;
 				unsigned short v;
-				v = para[0] * 256 + para[1];
-				m_Pv = v;
+				v = para[2*0] * 256 + para[2*0+1];
+				if(v >= 0 && v < 200)
+				{
+					m_Pv = v;
+				}
 
-				v = para[4] * 256 + para[5];
-				m_Sv = v;
+				v = para[2*2] * 256 + para[2*2+1];
+				if(v >= 0 && v < 200)
+				{
+					m_Sv = v;
+				}
 			}
 
 	
-		}*/
+		}
 
 		if (DataLen == sizeof(MODBUS_RS485_READ_ANSWER_WORD_18))
 		{
@@ -105,7 +111,7 @@ void CDevice_HuiLong_PCB::SetSleepMode(bool Sleep)
 
 	AppendWaitCmd(all);
 }
-void CDevice_HuiLong_PCB::ReadData(void)
+void CDevice_HuiLong_PCB::ReadData_X90(void)
 {
 	MODBUS_RS485_CMD_DATA_LEN_1 cmd;
 
@@ -129,6 +135,32 @@ void CDevice_HuiLong_PCB::ReadData(void)
 	m_Comm->m_LastSendCmd = all;
 
 }
+
+void CDevice_HuiLong_PCB::ReadData_BIG_AMP(void)
+{
+	MODBUS_RS485_CMD_DATA_LEN_1 cmd;
+
+	cmd.head.RS485_Addr = 0xFE;
+	cmd.head.cmd		= 3;
+	cmd.head.Addr_H		= 0;
+	cmd.head.Addr_L		= 0;
+	cmd.data[0]			= 3 / 256;
+	cmd.data[1]			= 3 % 256;
+	
+	cmd.CRC = CComm::CRC16_MODBUS((unsigned char*)&cmd, sizeof(cmd) - 2);
+
+
+	m_Comm->WriteComm( &cmd, sizeof(cmd));
+
+	MODBUS_RS485_CMD_ALL all;
+	all.device_ID = DEVICE_ID_HUILONG_PCB;
+	all.data_size = sizeof(cmd);
+	memcpy(&all.RS485_Addr, &cmd, sizeof(cmd));
+
+	m_Comm->m_LastSendCmd = all;
+
+}
+
 void CDevice_HuiLong_PCB::SetSv(int Sv)
 {
 

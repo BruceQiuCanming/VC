@@ -13,6 +13,7 @@ IMPLEMENT_DYNAMIC(COtherConfigDlg, CDialog)
 
 COtherConfigDlg::COtherConfigDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(COtherConfigDlg::IDD, pParent)
+	, m_RadioComm1(0)
 {
 
 }
@@ -24,6 +25,8 @@ COtherConfigDlg::~COtherConfigDlg()
 void COtherConfigDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
+
+	DDX_Radio(pDX, IDC_RADIO_COM1, m_RadioComm1);
 }
 
 
@@ -95,4 +98,15 @@ void COtherConfigDlg::OnBnClickedRadioCom8()
 	// TODO: 在此添加控件通知处理程序代码
 	::G_NormalConfigPara.CommPort = 7; 
 	::G_MainDlg->SaveConfig();
+}
+
+BOOL COtherConfigDlg::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+
+	 this->m_RadioComm1 = G_NormalConfigPara.CommPort;
+	 this->UpdateData(false);
+
+	return true;
+
 }
