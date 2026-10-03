@@ -2,12 +2,194 @@
 //
 
 #include "stdafx.h"
+#include <shlwapi.h>
 #include "RainbowInfo.h"
 #include "RainbowInfoDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+CString		theAppDirectory;
+CString		theAppFileName;
+
+//函数功能：对指定文件在指定的目录下创建其快捷方式
+//函数参数：
+//lpszFileName    指定文件，为NULL表示当前进程的EXE文件。
+//lpszLnkFileDir  指定目录，不能为NULL。
+//lpszLnkFileName 快捷方式名称，为NULL表示EXE文件名。
+//wHotkey         为0表示不设置快捷键
+//pszDescription  备注
+//iShowCmd        运行方式，默认为常规窗口
+
+BOOL CreateFileShortcut(TCHAR* lpszFileName, TCHAR* lpszLnkFileDir, TCHAR* lpszLnkFileName,       TCHAR* lpszWorkDir, WORD wHotkey, LPCTSTR lpszDescription, int iShowCmd = SW_SHOWNORMAL)
+{
+	    HRESULT hr = NULL;
+#ifndef WINCE
+       if (lpszLnkFileDir == NULL)
+              return FALSE;
+ 
+
+       IShellLink     *pLink;	//IShellLink对象指针
+       IPersistFile   *ppf;		//IPersisFil对象指针
+      
+       //创建IShellLink对象
+       hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (void**)&pLink);
+       if (FAILED(hr))
+              return FALSE;
+      
+       //从IShellLink对象中获取IPersistFile接口
+       hr = pLink->QueryInterface(IID_IPersistFile, (void**)&ppf);
+       if (FAILED(hr))
+       {
+              pLink->Release();
+              return FALSE;
+       }
+      
+       //目标
+       if (lpszFileName == NULL)
+		   pLink->SetPath(_T("C:\\"));//_wpgmptr);
+       else
+              pLink->SetPath(lpszFileName);
+      
+       //工作目录
+       if (lpszWorkDir != NULL)
+              pLink->SetPath(lpszWorkDir);
+      
+       //快捷键
+       if (wHotkey != 0)
+              pLink->SetHotkey(wHotkey);
+      
+       //备注
+       if (lpszDescription != NULL)
+              pLink->SetDescription(lpszDescription);
+      
+       //显示方式
+       pLink->SetShowCmd(iShowCmd);
+ 
+ 
+       //快捷方式的路径 + 名称
+       char szBuffer[MAX_PATH];
+       if (lpszLnkFileName != NULL) //指定了快捷方式的名称
+              wsprintf(szBuffer, _T("%s\\%s"), lpszLnkFileDir, lpszLnkFileName);
+       else  
+       {
+              //没有指定名称，就从取指定文件的文件名作为快捷方式名称。
+              TCHAR *pstr;
+              if (lpszFileName != NULL)
+                     pstr = strrchr(lpszFileName, '\\');
+              //else
+              //       pstr = strrchr(_wpgmptr, '\\');
+ 
+              if (pstr == NULL)
+              {    
+                     ppf->Release();
+                     pLink->Release();
+                     return FALSE;
+              }
+              //注意后缀名要从.exe改为.lnk
+              sprintf(szBuffer, _T("%s\\%s"), lpszLnkFileDir, pstr);
+              int nLen = strlen(szBuffer);
+              szBuffer[nLen - 3] = 'l';
+              szBuffer[nLen - 2] = 'n';
+              szBuffer[nLen - 1] = 'k';
+       }
+       //保存快捷方式到指定目录下
+       WCHAR  wsz[MAX_PATH];  //定义Unicode字符串
+	   MultiByteToWideChar(CP_ACP, 0, szBuffer, -1, wsz, MAX_PATH);
+	
+      hr = ppf->Save(wsz, TRUE);
+     // hr = ppf->Save(szBuffer, TRUE);
+
+       ppf->Release();
+       pLink->Release();
+#endif
+       return SUCCEEDED(hr);
+}
+
+//得到当前桌面路径
+BOOL GetProgramFilePath(TCHAR *pszDesktopPath)
+{
+#ifndef WINCE
+       LPITEMIDLIST  ppidl = NULL;
+      
+       if (SHGetSpecialFolderLocation(NULL, CSIDL_PROGRAM_FILES, &ppidl) == S_OK)
+       {
+              BOOL flag =   SHGetPathFromIDList(ppidl, pszDesktopPath);
+              CoTaskMemFree(ppidl);
+              return flag;
+       }
+#endif
+       return FALSE;
+}
+
+//得到当前桌面路径
+BOOL GetDesktopPath(TCHAR *pszDesktopPath)
+{
+#ifndef WINCE
+       LPITEMIDLIST  ppidl = NULL;
+      
+       if (SHGetSpecialFolderLocation(NULL, CSIDL_DESKTOP, &ppidl) == S_OK)
+       {
+              BOOL flag =   SHGetPathFromIDList(ppidl, pszDesktopPath);
+              CoTaskMemFree(ppidl);
+              return flag;
+       }
+#endif
+       return FALSE;
+}    
+
+int  CopyAndCreatShortCut(void)
+{
+#ifdef _DEBUG
+	return 1;
+#endif
+
+       char  szPath[MAX_PATH];
+	   char  szFilePath[MAX_PATH];
+       CoInitialize(NULL);
+ 
+       GetDesktopPath(szPath);
+	
+	   GetProgramFilePath(szFilePath);
+
+	   strcat(szFilePath,"\\常州市润邦电子科技有限公司");
+	   if(!PathIsDirectory(szFilePath))
+		{
+			::CreateDirectory(szFilePath,NULL); 
+		}
+	   
+		strcat(szFilePath,_T("\\"));
+	 
+	   if(::theAppDirectory.Compare(szFilePath) == 0)
+	   {
+		   return 0;
+	   }
+
+	   strcat(szFilePath,_T("RainbowInfo.exe"));
+
+	   bool result = CopyFile(::theAppFileName,szFilePath,false);
+
+	   if (!result)
+		{
+			AfxMessageBox(_T("文件已存在或复制失败！"));
+			exit(0);
+		}
+		
+
+	   if (CreateFileShortcut(szFilePath, szPath, _T("润邦迷你信息管理系统.lnk"), szFilePath, MAKEWORD(VK_F12, HOTKEYF_CONTROL), _T("常州市润邦电子科技有限公司 013915838598")))
+	   {
+		   CString s= _T("程序已经成功拷贝到计算机目录\r\n\r\n");
+		   s += szFilePath;
+		   s += _T("\r\n\r\n请在桌面点击快捷方式运行");
+              AfxMessageBox( s );
+			  exit(0);
+	   }
+
+       CoUninitialize();
+
+       return 1;
+}
+
 
 
 // CRainbowInfoApp
@@ -30,7 +212,7 @@ CRainbowInfoApp::CRainbowInfoApp()
 
 CRainbowInfoApp theApp;
 
-CString theAppDirectory;
+
 
 // CRainbowInfoApp 初始化
 
@@ -71,8 +253,10 @@ BOOL CRainbowInfoApp::InitInstance()
 	CString exeStr;
 	exeStr = AfxGetApp()->m_pszExeName;
 	exeStr += _T(".exe"); 
+	theAppFileName  = theAppDirectory;
 	theAppDirectory = theAppDirectory.Left( theAppDirectory.GetLength() - exeStr.GetLength());
 
+	CopyAndCreatShortCut();
 
 	CRainbowInfoDlg dlg;
 	m_pMainWnd = &dlg;

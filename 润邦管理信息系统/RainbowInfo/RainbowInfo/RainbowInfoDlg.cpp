@@ -5,7 +5,7 @@
 #include "RainbowInfo.h"
 #include "RainbowInfoDlg.h"
 #include "DeliveryNoteDlg.h"
-
+#include "ContractDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -65,6 +65,7 @@ BEGIN_MESSAGE_MAP(CRainbowInfoDlg, CDialog)
 	ON_WM_QUERYDRAGICON()
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDC_BUTTON_OUT, &CRainbowInfoDlg::OnBnClickedButtonOut)
+	ON_BN_CLICKED(IDC_BUTTON_CONTRACT, &CRainbowInfoDlg::OnBnClickedButtonContract)
 END_MESSAGE_MAP()
 
 
@@ -162,3 +163,11 @@ void CRainbowInfoDlg::OnBnClickedButtonOut()
 
 }
 
+
+void CRainbowInfoDlg::OnBnClickedButtonContract()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CContractDlg dlg;
+	dlg.DoModal();
+
+}

@@ -209,6 +209,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DShowCamera.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\HotLong_PCB.cpp"
 				>
 			</File>
@@ -284,6 +288,10 @@
 			</File>
 			<File
 				RelativePath=".\Device_HuiLong_PCB.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DShowCamera.h"
 				>
 			</File>
 			<File

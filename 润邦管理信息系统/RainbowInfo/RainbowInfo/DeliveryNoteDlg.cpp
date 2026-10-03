@@ -29,11 +29,53 @@ CDeliveryNoteDlg::CDeliveryNoteDlg(CWnd* pParent /*=NULL*/)
 	, m_Type(_T(""))
 	, m_SheetNr(_T(""))
 	, m_Unit(_T(""))
+	, m_Contract_Nr(_T(""))
+	, m_WorkDir(_T(""))
+	, m_SendCompany(_T(""))
+	, m_Sender(_T(""))
 {
 	// 报表样式+网格+整行选中
 	
 
 }
+
+CString G_Province[34]=
+{
+	"河北",
+	"山西",
+	"辽宁",
+	"吉林",
+	"黑龙江",
+	"江苏",
+	"浙江",
+	"安徽",
+	"福建",
+	"江西",
+	"山东",
+	"河南",
+	"湖北",
+	"湖南",
+	"广东",
+	"海南",
+	"四川",
+	"贵州",
+	"云南",
+	"陕西",
+	"甘肃",
+	"青海",
+	"台湾",
+	"内蒙古自治区",
+	"广西壮族自治区",
+	"西藏自治区",
+	"宁夏回族自治区",
+	"新疆维吾尔自治区",
+	"北京",
+	"天津",
+	"上海",
+	"重庆",
+	"香港",
+	"澳门"
+};
 
 CDeliveryNoteDlg::~CDeliveryNoteDlg()
 {
@@ -54,6 +96,12 @@ void CDeliveryNoteDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_SHEET_NR, m_SheetNr);
 	DDX_Control(pDX, IDC_DATETIMEPICKER1, m_DateTimeCtrl);
 	DDX_Text(pDX, IDC_EDIT_UNIT, m_Unit);
+	DDX_Text(pDX, IDC_EDIT_CONTRACT_NR, m_Contract_Nr);
+	DDX_Control(pDX, IDC_COMBO_PROVINCE, m_ComboProvince);
+	DDX_Text(pDX, IDC_EDIT_WORK_DIR, m_WorkDir);
+	DDX_Text(pDX, IDC_EDIT_SEND_COMPANY, m_SendCompany);
+	DDX_Text(pDX, IDC_EDIT_SENDER, m_Sender);
+	DDX_Control(pDX, IDC_STATIC_COMPANY_SEAL, m_CompanySeal);
 }
 
 
@@ -70,6 +118,12 @@ BEGIN_MESSAGE_MAP(CDeliveryNoteDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_PRODUCTION, &CDeliveryNoteDlg::OnBnClickedButtonProduction)
 	ON_BN_CLICKED(IDC_BUTTON_TYPE, &CDeliveryNoteDlg::OnBnClickedButtonType)
 	ON_BN_CLICKED(IDC_BUTTON_UNIT, &CDeliveryNoteDlg::OnBnClickedButtonUnit)
+	ON_BN_CLICKED(IDC_BUTTON_WORK_DIR, &CDeliveryNoteDlg::OnBnClickedButtonWorkDir)
+	ON_BN_CLICKED(IDC_BUTTON_RECEIVER2, &CDeliveryNoteDlg::OnBnClickedButtonReceiver2)
+
+	ON_NOTIFY(NM_DBLCLK, IDC_LIST2, &CDeliveryNoteDlg::OnNMDblclkList2)
+	ON_BN_CLICKED(IDC_BUTTON_COMPANY_SEAL, &CDeliveryNoteDlg::OnBnClickedButtonCompanySeal)
+	ON_WM_PAINT()
 END_MESSAGE_MAP()
 
 
@@ -145,7 +199,7 @@ BOOL IsFileExist(LPCTSTR szPath)
     return FALSE;
 }
 
-void CDeliveryNoteDlg::PrintDeliveryNote(void)
+void CDeliveryNoteDlg::PrintDeliveryNote(CString fName)
 {
 
     CPrintDialog prnDlg(true);//false);
@@ -197,7 +251,7 @@ void CDeliveryNoteDlg::PrintDeliveryNote(void)
 	CString sDir;
 	
 	
-	sDir = theAppDirectory;// +_T("para\\");
+	sDir = this->m_WorkDir;
 
 	if(!PathIsDirectory(sDir))
 	{
@@ -205,43 +259,28 @@ void CDeliveryNoteDlg::PrintDeliveryNote(void)
 	}
 
 	
+	sDir += "\\";
+	this->m_ComboProvince.GetWindowTextA(s);
+	sDir += s;
+
+	if(!PathIsDirectory(sDir))
+	{
+		::CreateDirectory(sDir,NULL); 
+	}
+
+	sDir += "\\";
 	sDir += this->m_Receiver;
-
+	
 	if(!PathIsDirectory(sDir))
 	{
 		::CreateDirectory(sDir,NULL); 
 	}
 
-	sDir += "\\";
-	s.Format("%04d",cur.GetYear());
-	sDir += s;
-	if(!PathIsDirectory(sDir))
-	{
-		::CreateDirectory(sDir,NULL); 
-	}
-
-	sDir += "\\";
-	s.Format("%02d",cur.GetMonth());
-	sDir += s;
-	if(!PathIsDirectory(sDir))
-	{
-		::CreateDirectory(sDir,NULL); 
-	}
-
-	sDir += "\\";
-	s.Format("%02d",cur.GetDay());
-	sDir += s;
-	if(!PathIsDirectory(sDir))
-	{
-		::CreateDirectory(sDir,NULL); 
-	}
+	
 
 	sDir += "\\";
 	app_name = sDir + _T("送货单_");
-	app_name += this->m_Receiver;
-	app_name += "_";
-	s.Format("%04d%02d%02d_SN_%s",cur.GetYear(),cur.GetMonth(),cur.GetDay(),this->m_SheetNr);
-	app_name += s;
+	app_name += fName;
 	app_name += ".pdf";
 
 	if(IsFileExist(app_name))
@@ -271,10 +310,17 @@ void CDeliveryNoteDlg::PrintDeliveryNote(void)
 		
 
 		CImage srcImg;
-		srcImg.Load(_T("d:\\2.bmp"));
+		CString s;
+		char buf[1024];
+		::GetProfileString("润邦管理信息系统","公司印章","",buf,sizeof(buf));
+		s = buf;
+		if(s.GetLength() > 0)
+		{
+			srcImg.Load(s);
+		}
 		
 		int fontHeight;
-		int x,y = 0;;
+		int y = 0;;
 		CFont TempFont,*oldfont;
 		int lines = 40;
 
@@ -347,14 +393,32 @@ void CDeliveryNoteDlg::PrintDeliveryNote(void)
 		temp_rect.bottom=	temp_rect.top +  per_line_height;
 		dc.DrawText(s,temp_rect, DT_LEFT | DT_VCENTER);
 
+		y+= per_line_height * 1;
 		
-		s.Format("发货时间： %d年%d月%d日  SN: %s",cur.GetYear(),cur.GetMonth(),cur.GetDay(),this->m_SheetNr);
+		s.Format("发货时间： %d年%d月%d日",cur.GetYear(),cur.GetMonth(),cur.GetDay());
 		temp_rect.left	= left_space;
 		temp_rect.right	= pagecx - left_space;
 		temp_rect.top	=	y;
 		temp_rect.bottom=	temp_rect.top +  per_line_height;
-		dc.DrawText(s,temp_rect, DT_RIGHT | DT_VCENTER);
+		dc.DrawText(s,temp_rect, DT_LEFT | DT_VCENTER);
+
+		y+= per_line_height * 1;
 		
+		s.Format("物流单号： %s",this->m_SheetNr);
+		temp_rect.left	= left_space;
+		temp_rect.right	= pagecx - left_space;
+		temp_rect.top	=	y;
+		temp_rect.bottom=	temp_rect.top +  per_line_height;
+		dc.DrawText(s,temp_rect, DT_LEFT | DT_VCENTER);
+		
+		y+= per_line_height * 1;
+		s = "合同编号： " + this->m_Contract_Nr;
+		temp_rect.left	= left_space;
+		temp_rect.right	= pagecx - left_space;
+		temp_rect.top	=	y;
+		temp_rect.bottom=	temp_rect.top +  per_line_height;
+		dc.DrawText(s,temp_rect, DT_LEFT | DT_VCENTER);
+
 		y+= per_line_height * 2;
 			temp_rect.left	= product_x;
 			temp_rect.right = temp_rect.left + product_width;
@@ -472,14 +536,26 @@ void CDeliveryNoteDlg::PrintDeliveryNote(void)
 
 		y+= per_line_height ;
 		y+= per_line_height ;
+		y+= per_line_height ;
+
+		y+= per_line_height ;
 		temp_rect.left	= left_space;
 		temp_rect.right = pagecx - left_space;
 		temp_rect.top	=	y + 2;
 		temp_rect.bottom=	temp_rect.top + per_line_height ;
 		
-		DrawText(&dc,temp_rect,"发货单位：常州市润邦电子科技有限公司  经手人：仇灿明 ", DT_LEFT | DT_VCENTER);
+		DrawText(&dc,temp_rect,"发货单位：" + this->m_SendCompany, DT_LEFT | DT_VCENTER);
 
-		srcImg.StretchBlt(dc.m_hDC, pagecx/2, y - per_line_height * 3, srcImg.GetWidth(), srcImg.GetHeight(), SRCAND/*SRCCOPY*/);
+		y+= per_line_height ;
+		temp_rect.left	= left_space;
+		temp_rect.right = pagecx - left_space;
+		temp_rect.top	=	y + 2;
+		temp_rect.bottom=	temp_rect.top + per_line_height ;
+		
+		DrawText(&dc,temp_rect,"发货人：  " + this->m_Sender, DT_LEFT | DT_VCENTER);
+
+
+		srcImg.StretchBlt(dc.m_hDC, pagecx/5, y - per_line_height * 3, srcImg.GetWidth(), srcImg.GetHeight(), SRCAND/*SRCCOPY*/);
 
 		
 		dc.EndPage(); 
@@ -635,7 +711,9 @@ void CDeliveryNoteDlg::OnBnClickedButtonSave()
 
 	
 	// 插入行
-	int i = m_ListCtrl.InsertItem(0, this->m_Production);
+	int n = m_ListCtrl.GetItemCount();//获取list里面有多少行
+	int i = m_ListCtrl.InsertItem(n, this->m_Production);
+
 	m_ListCtrl.SetItemText(i,1,this->m_Type);
 	m_ListCtrl.SetItemText(i,2,this->m_Unit);
 
@@ -666,17 +744,151 @@ void CDeliveryNoteDlg::OnBnClickedButtonDel()
 	}
 
 }
+void CDeliveryNoteDlg::Save(CString fName)
+{
+	CStdioFile f;
+	CString sDir,s;
+	sDir = m_WorkDir;
+	this->m_ComboProvince.GetWindowTextA(s);
+	s.Trim();
+	if(s.GetLength() == 0)
+	{
+		AfxMessageBox("请选择省份 & 公司名称");
+		return;
+	}
+	sDir += "\\";
+	sDir += s;
+	if(!PathIsDirectory(sDir))
+	{
+		if(CreateDirectory(sDir,NULL) == false)
+		{
+			AfxMessageBox("建立省份失败");
+		}
+		return;
+	}
+	
+	s = m_Receiver;
+	s.Trim();
+	if(s.GetLength() == 0)
+	{
+		AfxMessageBox("请选择省份 & 公司名称");
+		return;
+	}
+	sDir += "\\";
+	sDir += s;
+	if(!PathIsDirectory(sDir))
+	{
+		if(CreateDirectory(sDir,NULL) == false)
+		{
+			AfxMessageBox("建立公司失败");
+			return;
+		}
+	}
 
+	sDir += "\\";
+	sDir += fName;
+	sDir += ".送货单";
+
+	if(f.Open(sDir,CFile::modeReadWrite | CFile::modeCreate))
+	{
+		CString s;
+		CTime cur;
+		this->m_DateTimeCtrl.GetTime(cur); // CTime::GetCurrentTime();
+		s.Format("%s=:%04d%02d%02d\n","发货日期",cur.GetYear(),cur.GetMonth(),cur.GetDay());
+		f.WriteString(s);
+		s.Format("%s=:%s\n","物流单号",this->m_SheetNr);
+		f.WriteString(s);
+		s.Format("%s=:%s\n","合同编号",this->m_Contract_Nr);
+		f.WriteString(s);
+
+		s.Format("%s=:%s\n","发货单位",this->m_SendCompany);
+		f.WriteString(s);
+
+		s.Format("%s=:%s\n","发货人",this->m_Sender);
+		f.WriteString(s);
+
+		int counts = this->m_ListCtrl.GetItemCount();
+		
+		for(int nItemIndex = 0; nItemIndex < counts; nItemIndex++)
+		{
+			CString s1,s2;
+			TCHAR szBuf[1024];  
+			LVITEM lvi;  
+			lvi.iItem = nItemIndex;  
+			lvi.iSubItem = 0;  
+			lvi.mask = LVIF_TEXT;  
+			lvi.pszText = szBuf;  
+			lvi.cchTextMax = 1024;  
+			m_ListCtrl.GetItem(&lvi);  
+			s1.Format("品名=:%s;",szBuf);
+			s2+=s1;
+
+			lvi.iSubItem = 1;  
+			m_ListCtrl.GetItem(&lvi);  
+			s1.Format("型号=:%s;",szBuf);
+			s2+=s1;
+
+			lvi.iSubItem = 2;  
+			m_ListCtrl.GetItem(&lvi);  
+			s1.Format("单位=:%s;",szBuf);
+			s2+=s1;
+
+			lvi.iSubItem = 3;  
+			m_ListCtrl.GetItem(&lvi);  
+			s1.Format("数量=:%s;",szBuf);
+			s2+=s1;
+
+			lvi.iSubItem = 4;  
+			m_ListCtrl.GetItem(&lvi);  
+			s1.Format("单价=:%s;",szBuf);
+			s2+=s1;
+
+			lvi.iSubItem = 5;  
+			m_ListCtrl.GetItem(&lvi);  
+			s1.Format("总价=:%s;",szBuf);
+			s2+=s1;
+
+			lvi.iSubItem = 6;  
+			m_ListCtrl.GetItem(&lvi);  
+			s1.Format("备注=:%s;\n",szBuf);
+			s2+=s1;
+
+			f.WriteString(s2);
+		//	AfxMessageBox(s2);
+		}
+		
+		f.Close();
+	}
+	
+	
+
+
+}
 void CDeliveryNoteDlg::OnBnClickedButtonPrint()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	this->UpdateData();
+	m_SheetNr.Trim();
 	if(this->m_SheetNr.GetLength() == 0)
 	{
 		AfxMessageBox("请输入单号");
 		return;
 	}
-	PrintDeliveryNote();
+
+	::WriteProfileString("润邦管理信息系统","供方单位",m_SendCompany);
+	::WriteProfileString("润邦管理信息系统","供方联系人",m_Sender);
+	
+
+	CString fname,s;
+	CTime cur;
+	this->m_DateTimeCtrl.GetTime(cur); 
+	s.Format("%04d_%02d_%02d_",cur.GetYear(),cur.GetMonth(),cur.GetDay());
+	fname += s;
+
+	fname += m_SheetNr;
+	
+	Save(fname);
+	PrintDeliveryNote(fname);
 }
 
 void CDeliveryNoteDlg::OnBnClickedOk()
@@ -777,9 +989,109 @@ void CDeliveryNoteDlg::GetUnit(void)
 
 }
 
+#include <shobjidl.h>
+#pragma comment(lib, "ole32.lib")
+
+CString SelectFolderModern(HWND hWnd, CString strInitFolder = _T(""))
+{
+    CString strResult;
+    HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+
+	USES_CONVERSION;
+
+    IFileOpenDialog* pFileDlg = NULL;
+    hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, (void**)&pFileDlg);
+
+    if (SUCCEEDED(hr))
+    {
+        DWORD dwOptions;
+        pFileDlg->GetOptions(&dwOptions);
+        // 设置为仅选择文件夹
+        pFileDlg->SetOptions(dwOptions | FOS_PICKFOLDERS);
+
+        // 设置初始目录
+        if (!strInitFolder.IsEmpty())
+        {
+            IShellItem* pInitFolder = NULL;
+            SHCreateItemFromParsingName(A2CW((LPCSTR)strInitFolder), NULL, IID_IShellItem, (void**)&pInitFolder);
+            if (pInitFolder)
+            {
+                pFileDlg->SetFolder(pInitFolder);
+                pInitFolder->Release();
+            }
+        }
+
+        if (SUCCEEDED(pFileDlg->Show(hWnd)))
+        {
+            IShellItem* pItem = NULL;
+            if (SUCCEEDED(pFileDlg->GetResult(&pItem)))
+            {
+                PWSTR pwszPath = NULL;
+                pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwszPath);
+                strResult = pwszPath;
+                CoTaskMemFree(pwszPath);
+                pItem->Release();
+            }
+        }
+        pFileDlg->Release();
+    }
+
+    if (SUCCEEDED(hr))
+        CoUninitialize();
+
+    return strResult;
+}
+
+void CDeliveryNoteDlg::SelectCustomer(CString customer)
+{
+	customer = customer.Right(customer.GetLength() - m_WorkDir.GetLength() - 1);
+	
+	
+	int index = customer.FindOneOf("\\");
+	if(index < 0)
+	{
+		AfxMessageBox("不是合格的客户组合：省份 + 客户公司");
+		return;
+	}
+	CString Province = customer.Left(index);
+	this->m_ComboProvince.SetWindowTextA(Province);
+
+	int i;
+	for( i = 0; i < sizeof(::G_Province)/ sizeof(G_Province[0]); i ++)
+	{
+		if(G_Province[i].Compare(Province) == 0)
+		{
+			break;
+		}
+	}
+	if(i >= sizeof(::G_Province)/ sizeof(G_Province[0]))
+	{
+		AfxMessageBox("不是合格的客户组合：省份 + 客户公司");
+		return;
+	}
+
+	customer = customer.Right(customer.GetLength() - index - 1);
+
+	m_Receiver = customer;
+	
+	this->UpdateData(false);
+}
 void CDeliveryNoteDlg::OnBnClickedButtonReceiver()
 {
 	// TODO: 在此添加控件通知处理程序代码
+
+	if(m_WorkDir.GetLength() == 0)
+	{
+		AfxMessageBox("不是合格的工作目录");
+		return;
+	}
+	CString customer = SelectFolderModern(this->m_hWnd,m_WorkDir);
+
+	SelectCustomer(customer);
+
+	return;
+
+
 	CListDlg dlg_list;
 
 	dlg_list.m_Tiltle = "选择 客户";
@@ -889,8 +1201,23 @@ BOOL CDeliveryNoteDlg::OnInitDialog(void)
 	m_ListCtrl.InsertColumn(5, _T("总价"), 0, 60);
 	m_ListCtrl.InsertColumn(6, _T("备注"), 0, 100);
 
+	for(int i = 0; i < sizeof(G_Province) / sizeof(G_Province[0]); i++)
+	{
+		this->m_ComboProvince.AddString(G_Province[i]);
+	}
+	m_ComboProvince.SetCurSel(0);
+	
+	char buf[1024];
+	::GetProfileString("润邦管理信息系统","工作目录","",buf,sizeof(buf));
+	m_WorkDir = buf;
+	::GetProfileString("润邦管理信息系统","供方单位","",buf,sizeof(buf));
+	m_SendCompany = buf;
+	::GetProfileString("润邦管理信息系统","供方联系人","",buf,sizeof(buf));
+	m_Sender = buf;
 
 	
+
+	this->UpdateData(false);
 	return true;
 }
 void CDeliveryNoteDlg::OnBnClickedButtonProduction()
@@ -978,5 +1305,270 @@ void CDeliveryNoteDlg::OnBnClickedButtonUnit()
 		this->m_Unit = dlg_list.m_SelectString;
 		this->UpdateData(false);
 		return;
+	}
+}
+
+void CDeliveryNoteDlg::OnBnClickedButtonWorkDir()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_WorkDir = SelectFolderModern(this->m_hWnd);
+
+	this->UpdateData(false);
+
+	if(m_WorkDir.GetLength() == 0)
+	{
+		return;
+	}
+	
+
+	for(int i = 0; i < sizeof(G_Province) / sizeof(G_Province[0]); i++)
+	{
+		CreateDirectory(m_WorkDir + "\\" +  G_Province[i],NULL);
+	}
+
+	::WriteProfileString("润邦管理信息系统","工作目录",m_WorkDir);
+}
+
+void CDeliveryNoteDlg::OnBnClickedButtonReceiver2()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	char szFilters[]= _T("送货单 (*.送货单)|*.送货单|");
+
+
+	CFileDialog fd(TRUE, _T("送货单"), _T("*.送货单"),
+      OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
+	fd.m_ofn.lpstrInitialDir = this->m_WorkDir;
+	if(fd.DoModal() == IDOK)
+	{
+		CStdioFile f;
+		CString s = fd.GetPathName();
+		CString s2,name;
+		if(f.Open(s,CFile::modeRead | CFile::typeText))
+		{
+			s = s.Left(s.GetLength() - fd.GetFileName().GetLength() - 1);
+			SelectCustomer(s);
+			f.SeekToBegin();
+			this->m_ListCtrl.DeleteAllItems();
+			int ItemIndex = 0;
+			while(1)
+			{
+				if(f.ReadString(s))
+				{
+					int pos1,pos2;
+					if(s.Find("发货日期=:") == 0)
+					{
+						CString strDate = s.Right(s.GetLength() - strlen("发货日期=:"));
+						int iDate = atoi(strDate);
+						int year  = iDate /10000;
+						int month = (iDate % 10000 ) / 100;
+						int day = (iDate % 100) ;
+						COleDateTime daytime;
+						daytime.SetDate(year,month,day);
+						this->m_DateTimeCtrl.SetTime(daytime);
+						
+					}
+
+					if(s.Find("物流单号=:") == 0)
+					{
+						this->m_SheetNr = s.Right(s.GetLength() - strlen("物流单号=:"));
+						this->UpdateData(false);
+					}
+					if(s.Find("合同编号=:") == 0)
+					{
+						this->m_Contract_Nr = s.Right(s.GetLength() - strlen("合同编号=:"));
+						this->UpdateData(false);
+					}
+					if(s.Find("发货单位=:") == 0)
+					{
+						this->m_SendCompany = s.Right(s.GetLength() - strlen("发货单位=:"));
+						this->UpdateData(false);
+					}
+					if(s.Find("发货人=:") == 0)
+					{
+						this->m_Sender = s.Right(s.GetLength() - strlen("发货人=:"));
+						this->UpdateData(false);
+					}
+
+					if(s.Find("品名=:") == 0)
+					{
+						name = "品名=:";
+						pos1 = s.Find(name);
+						pos2 = s.Find(";",pos1);
+						s2 = s.Right(s.GetLength() - pos1 - name.GetLength());
+						s2 = s2.Left( pos2 - pos1 - name.GetLength());
+						int i = m_ListCtrl.InsertItem(ItemIndex, s2);
+
+						name = "型号=:";
+						pos1 = s.Find(name);
+						pos2 = s.Find(";",pos1);
+						s2 = s.Right(s.GetLength() - pos1 - name.GetLength());
+						s2 = s2.Left( pos2 - pos1 - name.GetLength());
+						m_ListCtrl.SetItemText(i,1,s2);
+
+						name = "单位=:";
+						pos1 = s.Find(name);
+						pos2 = s.Find(";",pos1);
+						s2 = s.Right(s.GetLength() - pos1 - name.GetLength());
+						s2 = s2.Left( pos2 - pos1 - name.GetLength());
+						m_ListCtrl.SetItemText(i,2,s2);
+
+						name = "数量=:";
+						pos1 = s.Find(name);
+						pos2 = s.Find(";",pos1);
+						s2 = s.Right(s.GetLength() - pos1 - name.GetLength());
+						s2 = s2.Left( pos2 - pos1 - name.GetLength());
+						m_ListCtrl.SetItemText(i,3,s2);
+
+						name = "单价=:";
+						pos1 = s.Find(name);
+						pos2 = s.Find(";",pos1);
+						s2 = s.Right(s.GetLength() - pos1 - name.GetLength());
+						s2 = s2.Left( pos2 - pos1 - name.GetLength());
+						m_ListCtrl.SetItemText(i,4,s2);
+
+						name = "总价=:";
+						pos1 = s.Find(name);
+						pos2 = s.Find(";",pos1);
+						s2 = s.Right(s.GetLength() - pos1 - name.GetLength());
+						s2 = s2.Left( pos2 - pos1 - name.GetLength());
+						m_ListCtrl.SetItemText(i,5,s2);
+
+						name = "备注=:";
+						pos1 = s.Find(name);
+						pos2 = s.Find(";",pos1);
+						s2 = s.Right(s.GetLength() - pos1 - name.GetLength());
+						s2 = s2.Left( pos2 - pos1 - name.GetLength());
+						m_ListCtrl.SetItemText(i,6,s2);
+
+						ItemIndex++;
+
+
+					}
+					
+				}
+				else
+				{
+					break;
+				}
+			}
+
+		}
+	}
+}
+
+
+void CDeliveryNoteDlg::OnNMDblclkList2(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	//LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<NMITEMACTIVATE>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+
+	NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)pNMHDR;
+
+	// 获取被单击的项索引
+	int nItem = pNMListView->iItem;
+
+	if (nItem >= 0) // 确保单击的是有效项
+	{
+			CString strText;
+
+			strText= m_ListCtrl.GetItemText(nItem, 0);
+			this->m_Production = strText;
+
+			strText= m_ListCtrl.GetItemText(nItem, 1);
+			this->m_Type = strText;
+
+			strText= m_ListCtrl.GetItemText(nItem, 2);
+			this->m_Unit = strText;
+						
+			strText= m_ListCtrl.GetItemText(nItem, 3);
+			this->m_Counts = atoi(strText);
+
+			strText= m_ListCtrl.GetItemText(nItem, 4);
+			this->m_Price = atoi(strText);
+						
+			strText= m_ListCtrl.GetItemText(nItem, 5);
+			this->m_TotalPrice = atoi(strText);
+
+			strText= m_ListCtrl.GetItemText(nItem, 6);
+			this->m_Memo = strText;
+						
+			this->UpdateData(false);
+	}
+
+
+	*pResult = 0;
+
+}
+
+void CDeliveryNoteDlg::OnBnClickedButtonCompanySeal()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	char szFilters[]= _T("公司印章 (*.bmp)|*.bmp|");
+
+
+	CFileDialog fd(TRUE, _T("公司印章"), _T("*.bmp"),
+      OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
+	fd.m_ofn.lpstrInitialDir = this->m_WorkDir;
+
+	if(fd.DoModal() == IDOK)
+	{
+		CImage srcImg;
+		CString s;
+		s = fd.GetPathName();
+
+		::WriteProfileString("润邦管理信息系统","公司印章",s);
+	
+		srcImg.Load(s);
+		//HBITMAP hBmp = bitmap.Detach();
+		//if(hBmp != NULL)
+		{
+			CRect rect;
+			CDC *dc = m_CompanySeal.GetDC();
+			m_CompanySeal.GetWindowRect(&rect);
+			if(rect.Width() >  rect.Height())
+			{
+				srcImg.StretchBlt(dc->m_hDC, (rect.Width() -  rect.Height())/2, 0, rect.Height(), rect.Height(), SRCAND/*SRCCOPY*/);
+			}
+			else
+			{
+				srcImg.StretchBlt(dc->m_hDC, 0, ( rect.Height() - rect.Width())/2, rect.Width(), rect.Width(), SRCAND/*SRCCOPY*/);
+			}
+
+		}
+	}
+
+}
+
+void CDeliveryNoteDlg::OnPaint()
+{
+	CPaintDC dc(this); // device context for painting
+	// TODO: 在此处添加消息处理程序代码
+	// 不为绘图消息调用 CDialog::OnPaint()
+
+	CImage srcImg;
+	CString s;
+	char buf[1024];
+	::GetProfileString("润邦管理信息系统","公司印章","",buf,sizeof(buf));
+	s = buf;
+	if(s.GetLength() > 0)
+	{
+		srcImg.Load(s);
+		//HBITMAP hBmp = bitmap.Detach();
+		//if(hBmp != NULL)
+		{
+			CRect rect;
+			CDC *CompanySeal_dc = m_CompanySeal.GetDC();
+			m_CompanySeal.GetWindowRect(&rect);
+			if(rect.Width() >  rect.Height())
+			{
+				srcImg.StretchBlt(CompanySeal_dc->m_hDC, (rect.Width() -  rect.Height())/2, 0, rect.Height(), rect.Height(), SRCAND/*SRCCOPY*/);
+			}
+			else
+			{
+				srcImg.StretchBlt(CompanySeal_dc->m_hDC, 0, ( rect.Height() - rect.Width())/2, rect.Width(), rect.Width(), SRCAND/*SRCCOPY*/);
+			}
+
+		}
 	}
 }

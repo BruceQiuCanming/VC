@@ -27,6 +27,7 @@ void CDlgInfomation::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 
 	DDX_Text(pDX, IDC_EDIT_MEMO, m_Memo);
+	DDX_Text(pDX, IDC_EDIT_barcode, m_Barcode);
 	DDX_Text(pDX, IDC_STATIC_INFO, m_Info);
 	DDX_Text(pDX, IDC_EDIT_TESTER, m_Tester);
 }

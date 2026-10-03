@@ -784,13 +784,15 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "本次测试概况"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "确定",IDOK,57,162,50,14
-    PUSHBUTTON      "取消",IDCANCEL,177,162,50,14
+    DEFPUSHBUTTON   "确定",IDOK,87,163,50,14
+    PUSHBUTTON      "取消",IDCANCEL,186,164,50,14
     EDITTEXT        IDC_EDIT_MEMO,62,129,247,23,ES_AUTOHSCROLL
-    CONTROL         "",IDC_STATIC_INFO,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,5,302,99
+    CONTROL         "",IDC_STATIC_INFO,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,5,302,75
     LTEXT           "测试说明",IDC_STATIC_MEMO,7,133,52,18
     EDITTEXT        IDC_EDIT_TESTER,62,107,247,23,ES_AUTOHSCROLL
     LTEXT           "操作员",IDC_STATIC_TESTER,7,111,52,18
+    EDITTEXT        IDC_EDIT_barcode,62,82,247,23,ES_AUTOHSCROLL
+    LTEXT           "条形码",IDC_STATIC_BARCODE,7,86,52,18
 END
 
 IDD_DIALOG_TEMP_ADJUST DIALOGEX 0, 0, 351, 206
@@ -1659,17 +1661,15 @@ IDR_NTC_24_LED          HEX                     "..\\..\\icc_avr_new\\NTC\\NTC_2
 IDR_NTC_24_RELAY_LED    HEX                     "..\\..\\icc_avr_new\\NTC\\NTC_24_RELAY\\bin\\hex\\NTC_24_RELAY_LED.hex"
 IDR_HEX_INTERFACE_32    HEX                     "..\\..\\icc_avr_new\\常胜_输入接口板_32路\\bin\\常胜_输入接口板_32路.hex"
 IDR_HEX_INTERFACE_64    HEX                     "..\\..\\icc_avr_new\\常胜_输入接口板_32路\\bin\\常胜_输入接口板_64路.hex"
-IDR_TEMP2_2BTA_10IN_12OUT_BOARD HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TEMP2_2BTA_10IN_12OUT_BOARD_R75.hex"
 IDR_TEMP2_1BTA_10IN_12OUT_BOARD HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TEMP2_1BTA_10IN_12OUT_BOARD_R75.hex"
 IDR_TPC_DC_AMP_8        HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TPC_DC_AMP_8.hex"
 IDR_TEMP1_1BTA_10IN_12OUT_BOARD HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TEMP1_1BTA_10IN_12OUT_BOARD_R75.hex"
-IDR_TPC_TempBoard_Mega16_8PT100_1SSR_1BEEP_INTERFACE HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TPC_TempBoard_Mega16_8PT100_1SSR_1BEEP_INTERFACE.hex"
-IDR_TPC_TempBoard_Mega16_8PT100_8SSR_HEX HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TPC_TempBoard_Mega16_8PT100_8SSR.hex"
 IDR_TPC_TEMPBOARD_MEGA16_R75 HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TPC_TempBoard_Mega16_R75.hex"
 IDR_TPC_TEMPBOARD_MEGA16_R75_GAIN_4 HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TPC_TempBoard_Mega16_R75_GAIN4.hex"
 IDR_TPC_TEMPBOARD_MEGA16_R82 HEX                     "..\\..\\icc_avr_new\\TPC_TempBoard_TM7705\\bin\\hex\\TPC_TempBoard_Mega16_R82.hex"
 IDR_BIMETAL24_V3_A      HEX                     "D:\\work\\ICC_AVR_NEW\\BiMetal_V2\\bin\\Hex\\BiMetal24_V3_A.hex"
 IDR_BIMETAL24_V3_B      HEX                     "D:\\work\\ICC_AVR_NEW\\BiMetal_V2\\bin\\Hex\\BiMetal24_V3_B.hex"
+IDR_LLTB_2TEMP_24OUT    HEX                     "D:\\work\\ICC_AVR_NEW\\TPC_TempBoard_TM7705\\bin\\hex\\TPC_LLTB_2TEMP_24OUT.hex"
 
 /////////////////////////////////////////////////////////////////////////////
 //

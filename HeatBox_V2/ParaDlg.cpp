@@ -656,9 +656,8 @@ void CParaDlg::OnButtonCreateModifyPara()
 
 }
 
-void CParaDlg::OnSelchangeComboHeatSpeed() 
+bool CParaDlg::InputPassword(void)
 {
-	// TODO: Add your control notification handler code here
 	CInputDlg dlg;
 
 		
@@ -667,28 +666,36 @@ void CParaDlg::OnSelchangeComboHeatSpeed()
 	{
 		if(dlg.m_Input == _T("1357"))
 		{
+			return true;
 		}
 		else
 		{
-			m_ComboBoxHeatSpeed.SetCurSel(G_NormalConfigPara[m_BoxNr].HeatSpeed);
-			return;
+			AfxMessageBox(_T("ÃÜÂë´íÎó!"));
+			return false;
 		}
 	}
 
+		AfxMessageBox(_T("ÉèÖÃÈ¡Ïû!"));
+		return false;
+	
+}
+void CParaDlg::OnSelchangeComboHeatSpeed() 
+{
+	// TODO: Add your control notification handler code here
+	
+	if(InputPassword() == false)
+	{
+			::ReadNormalConfigPara();
+			this->UpdateData();
+			return;
+	}
+			
 	int curSel = this->m_ComboBoxHeatSpeed.GetCurSel(); 
 	if(curSel < 0)
 	{
 		curSel = 19;
 	}
 	
-	CString s;
-	
-	
-	
-	
-#ifdef _OIL_
-	curSel+=2;
-#endif
 
 	
 	::G_NormalConfigPara[m_BoxNr].HeatSpeed = curSel; 
@@ -727,21 +734,11 @@ void CParaDlg::OnSelchangeComboTestMode()
 	CWnd *w = this->GetDlgItem(IDC_EDIT_HIGH_LEVEL_LOW); 
 	w->SetFocus(); 
 
-	CInputDlg dlg_psw;
-
-		
-	dlg_psw.m_Title = _T("ÇëÊäÈëÃÜÂë");
-	if(dlg_psw.DoModal() == IDOK)
+	if(InputPassword() == false)
 	{
-		if(dlg_psw.m_Input == _T("1357"))
-		{
-
-		}
-		else
-		{
-			m_TestModeList.SetCurSel(G_NormalConfigPara[m_BoxNr].TestMode);
+			::ReadNormalConfigPara();
+			this->UpdateData();
 			return;
-		}
 	}
 
 
@@ -784,7 +781,7 @@ void CParaDlg::OnSelchangeComboTestMode()
 		wnd = this->GetDlgItem(IDC_EDIT_HEAT_DEGREE);
 		wnd->ShowWindow(SW_SHOW);
 		wnd = this->GetDlgItem(IDC_EDIT_COOL_DEGREE);
-		wnd->ShowWindow(SW_HIDE);
+		wnd->ShowWindow(SW_SHOW);
 	}
 	else
 	{
@@ -946,21 +943,11 @@ void CParaDlg::OnCbnSelchangeComboHeatBoxType()
 	CWnd *w = this->GetDlgItem(IDC_EDIT_HIGH_LEVEL_LOW); 
 	w->SetFocus(); 
 
-	CInputDlg dlg_psw;
-
-		
-	dlg_psw.m_Title = _T("ÇëÊäÈëÃÜÂë");
-	if(dlg_psw.DoModal() == IDOK)
+	if(InputPassword() == false)
 	{
-		if(dlg_psw.m_Input == _T("1357"))
-		{
-
-		}
-		else
-		{
 			::ReadNormalConfigPara();
+			this->UpdateData();
 			return;
-		}
 	}
 
 	this->UpdateData();
@@ -1203,19 +1190,11 @@ void CParaDlg::OnEnSetfocusEditPidMinutes()
 	CWnd *w = this->GetDlgItem(IDC_EDIT_HIGH_LEVEL_LOW); 
 	w->SetFocus(); 
 
-	CInputDlg dlg_psw;
-
-		
-	dlg_psw.m_Title = _T("ÇëÊäÈëÃÜÂë");
-	if(dlg_psw.DoModal() == IDOK)
+	if(InputPassword() == false)
 	{
-		if(dlg_psw.m_Input == _T("1357"))
-		{
-		}
-		else
-		{
+			::ReadNormalConfigPara();
+			this->UpdateData();
 			return;
-		}
 	}
 
 	
@@ -1310,23 +1289,12 @@ void CParaDlg::OnCbnSelchangeComboCoolDegree()
 	CWnd *w = this->GetDlgItem(IDC_EDIT_HIGH_LEVEL_LOW); 
 	w->SetFocus(); 
 
-	CInputDlg dlg_psw;
-
-		
-	dlg_psw.m_Title = _T("ÇëÊäÈëÃÜÂë");
-	if(dlg_psw.DoModal() == IDOK)
+	if(InputPassword() == false)
 	{
-		if(dlg_psw.m_Input == _T("1357"))
-		{
-
-		}
-		else
-		{
-			m_ComboCoolDegree.SetCurSel(G_NormalConfigPara[m_BoxNr].AirControlEquipment);
+			::ReadNormalConfigPara();
+			this->UpdateData();
 			return;
-		}
 	}
-
 
 	G_NormalConfigPara[m_BoxNr].AirControlEquipment = m_ComboCoolDegree.GetCurSel(); 
 	::SaveNormalConfigPara(); 
@@ -1436,24 +1404,13 @@ void CParaDlg::OnCbnSelchangeComboPrinterType()
 	CWnd *w = this->GetDlgItem(IDC_EDIT_HIGH_LEVEL_LOW); 
 	w->SetFocus(); 
 
-	CInputDlg dlg_psw;
-
-		
-	dlg_psw.m_Title = _T("ÇëÊäÈëÃÜÂë");
-	if(dlg_psw.DoModal() == IDOK)
+	if(InputPassword() == false)
 	{
-		if(dlg_psw.m_Input == _T("1357"))
-		{
-
-		}
-		else
-		{
 			::ReadNormalConfigPara();
+			this->UpdateData();
 			return;
-		}
 	}
 
-	this->UpdateData();
 	::G_NormalConfigPara[m_BoxNr].PrinterType =   (BOX_TYPE)m_PrinterType;
 	::SaveNormalConfigPara(); 
 }
@@ -1467,23 +1424,13 @@ void CParaDlg::OnCbnSelchangeComboAutoPrintType()
 	CWnd *w = this->GetDlgItem(IDC_EDIT_HIGH_LEVEL_LOW); 
 	w->SetFocus(); 
 
-	CInputDlg dlg_psw;
-
-		
-	dlg_psw.m_Title = _T("ÇëÊäÈëÃÜÂë");
-	if(dlg_psw.DoModal() == IDOK)
+	if(InputPassword() == false)
 	{
-		if(dlg_psw.m_Input == _T("1357"))
-		{
-
-		}
-		else
-		{
 			::ReadNormalConfigPara();
+			this->UpdateData();
 			return;
-		}
 	}
-	this->UpdateData();
+	
 	::G_NormalConfigPara[m_BoxNr].AutoPrintType =   (BOX_TYPE)m_AutoPrintType;
 	::SaveNormalConfigPara(); 
 }

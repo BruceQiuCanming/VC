@@ -24,12 +24,13 @@ protected:
 public:
 	virtual BOOL OnInitDialog();
 
-	void PrintDeliveryNote(void);
+	void PrintDeliveryNote(CString fName);
 	void CDeliveryNoteDlg::DrawRect(CDC *dc,CRect rect);
 	void CDeliveryNoteDlg::DrawText(CDC *dc,CRect rect,CString text,UINT format);
 	afx_msg void OnBnClickedButtonSave();
 	afx_msg void OnBnClickedButtonDel();
 	afx_msg void OnBnClickedButtonPrint();
+	void CDeliveryNoteDlg::Save(CString fName);
 	CString m_Production;
 	int m_Counts;
 	float m_Price;
@@ -37,6 +38,7 @@ public:
 	CString m_Memo;
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedButtonReceiver();
+	void CDeliveryNoteDlg::SelectCustomer(CString customer);
 	CString m_Receiver;
 
 	CStringArray	m_ReceiverArray;
@@ -61,4 +63,16 @@ public:
 	CDateTimeCtrl m_DateTimeCtrl;
 	CString m_Unit;
 	afx_msg void OnBnClickedButtonUnit();
+	CString m_Contract_Nr;
+	CComboBox m_ComboProvince;
+	afx_msg void OnBnClickedButtonWorkDir();
+	CString m_WorkDir;
+	afx_msg void OnBnClickedButtonReceiver2();
+
+	afx_msg void OnNMDblclkList2(NMHDR *pNMHDR, LRESULT *pResult);
+	CString m_SendCompany;
+	CString m_Sender;
+	afx_msg void OnBnClickedButtonCompanySeal();
+	CStatic m_CompanySeal;
+	afx_msg void OnPaint();
 };

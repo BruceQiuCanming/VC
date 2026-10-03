@@ -4,6 +4,10 @@
 #include "stdafx.h"
 #include "HotLong_PCB.h"
 #include "HotLong_PCBDlg.h"
+#include <setupapi.h>
+#pragma comment(lib, "setupapi.lib")
+
+#include <vector>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -14,6 +18,7 @@
 #include "strmif.h"
 #pragma comment(lib, "Strmiids.lib")
 #pragma comment(lib, "Quartz.lib")
+
 #include <SetupAPI.h>
 #include <InitGuid.h>
 #include <tchar.h>
@@ -44,8 +49,15 @@
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "sapi.lib")
 
-CONFIG_DATA	m_ConfigData;
+static const GUID GUID_COMPORT = { 0x86E0D1E0, 0x8089, 0x11D0, { 0x9C, 0xE4, 0x08, 0x00, 0x3E, 0x30, 0x1F, 0x73 }};
+  
+static const GUID GUID_CAMERA  = { 0xe5323777, 0xf976, 0x4f5b, { 0x9b, 0x55, 0xb9, 0x46, 0x99, 0xc4, 0x6e, 0x44 }};
+//static const GUID GUID_CAMERA_2= { 0x17CCA71B, 0xECD7, 0x11D0, { 0xB9, 0x08, 0x00, 0xA0, 0xC9, 0x22, 0x31, 0x96 }};
+//static const GUID GUID_CAMERA_2= { 0x4d56e978, 0xe3257, 0x11ce, { 0xbf, 0xc1, 0x08, 0x00, 0x2b, 0xe1, 0x03, 0x18 }};
 
+static const GUID GUID_CAMERA_2= { 0x6bdd1fc6, 0x810f, 0x11d0, { 0xbe, 0xc7, 0x08, 0x00, 0x2b, 0xe2, 0x09, 0x2f }};
+CONFIG_DATA	m_ConfigData;
+DealVide_THREAD_PARA m_DealVideo_ThreadPara;
 
 
 
@@ -60,7 +72,18 @@ CString strExcleFilePath;  //用于保存数据源Excel文件路径
 CString strOutputExcleFilePath;  //用于保存输出Excel文件路径
 CString strWorkDir;     //用于保存exe所在路径
 
-
+UINT DealVideo_Thread(LPVOID pParam)
+{
+	
+	DealVide_THREAD_PARA* para = ((DealVide_THREAD_PARA*)pParam);
+	while(1)
+	{
+		Sleep(20);
+		StartVideo(para->pWnd);
+	}
+	
+	return true;
+}
 
 CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
 {
@@ -107,6 +130,17 @@ CHotLong_PCBDlg::CHotLong_PCBDlg(CWnd* pParent /*=NULL*/)
 		m_Pp[i] = 0;
 	}
 	//Excel_Test();
+
+	m_StartVideo_UsedTime_Max = 0;
+	m_StartVideo_UsedTime_Min = 999999999L;
+	m_UsedMemory_Max		  = 0;
+	m_UsedMemory_Min		  = 999999999L;
+
+	m_hDevNotify_Comm	=	NULL;
+	m_hDevNotify_Camera =   NULL;
+	m_hDevNotify_Camera_2 =   NULL;
+
+	m_Doing = false;
 }
 
 
@@ -298,9 +332,7 @@ BEGIN_MESSAGE_MAP(CHotLong_PCBDlg, CDialog)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	//}}AFX_MSG_MAP
-	ON_BN_CLICKED(IDOK, &CHotLong_PCBDlg::OnBnClickedOk)
-	ON_BN_CLICKED(IDC_BUTTON1, &CHotLong_PCBDlg::OnBnClickedButton1)
-
+	
 	ON_MESSAGE(Comm_Device_HuiKong_DIO_MSG_ID, OnComm_Device_HuiKong_DIO)
 	ON_MESSAGE(Comm_PROGRAM_MSG_ID, OnComm_PROGRAM)
 
@@ -313,6 +345,7 @@ BEGIN_MESSAGE_MAP(CHotLong_PCBDlg, CDialog)
 	ON_MESSAGE(Comm_AGING_MSG_ID_7, OnComm_PCB_7)
 	ON_MESSAGE(Comm_AGING_MSG_ID_8, OnComm_PCB_8)
 
+	ON_MESSAGE(WM_DEVICECHANGE, &CHotLong_PCBDlg::OnDeviceChange)
 
 	ON_WM_TIMER()
 //	ON_BN_CLICKED(IDC_BUTTON_LED_RECT, &CHotLong_PCBDlg::OnBnClickedButtonLedRect)
@@ -434,11 +467,13 @@ BEGIN_MESSAGE_MAP(CHotLong_PCBDlg, CDialog)
 	ON_EN_SETFOCUS(IDC_EDIT_LED_COLOR_TOP, &CHotLong_PCBDlg::OnEnSetfocusEditLedColorTop)
 	ON_EN_SETFOCUS(IDC_EDIT_LED_COLOR_BOTTOM, &CHotLong_PCBDlg::OnEnSetfocusEditLedColorBottom)
 
+	ON_BN_CLICKED(IDC_BUTTON_PHOTO, &CHotLong_PCBDlg::OnBnClickedButtonPhoto)
 	END_MESSAGE_MAP()
 
 
 // CHotLong_PCBDlg 消息处理程序
-void EnumSerialPortFriendlyNames(CCommArray& portList);
+
+
 
 CBrush 	G_bkBrush;
 CBrush 	G_RedBrush;
@@ -569,6 +604,7 @@ BOOL CHotLong_PCBDlg::OnInitDialog()
 
 	
 
+	
 
 	CRect rect;
 	GetClientRect(&rect); // 获取客户区的大小
@@ -580,19 +616,11 @@ BOOL CHotLong_PCBDlg::OnInitDialog()
 	//this->m_staticScreen.MoveWindow(0,0,wnd_width * 0.3,wnd_height * 0.3,true);
 	
 
-	m_ListCtrl.ResetContent();
-	m_cap.EnumDevices (&m_ListCtrl,m_ListCtrl);
-	m_ListCtrl.SetCurSel (m_ConfigData.m_Camera_Nr);
-	if(m_ListCtrl.GetCount() > 0 
-		&& m_ConfigData.m_Camera_Nr >= 0 
-		&& m_ConfigData.m_Camera_Nr < m_ListCtrl.GetCount())
-	{
-		m_cap.Init(m_ConfigData.m_Camera_Nr,this->m_staticScreen);
-	}
-	else
-	{
-		AfxMessageBox(_T("无此编号的摄像头"));
-	}
+	
+	OpenAllComm();
+
+	InitVideo();
+	
 
 
 
@@ -606,94 +634,23 @@ BOOL CHotLong_PCBDlg::OnInitDialog()
 	
 	this->ShowWindow(SW_MAXIMIZE);
 
-	this->SetTimer(1, 50, NULL);
-
+	
 
 	CString CommStr;
 
 	
-
-	CCommArray CommNameArray;
-	CommNameArray.RemoveAll();
-	EnumSerialPortFriendlyNames(CommNameArray);
-
-	m_Device_HuiKong_DIO.m_CommPara.comm		=&m_Device_HuiKong_DIO;
-	m_Device_HuiKong_DIO.m_CommPara.MessageID	= Comm_Device_HuiKong_DIO_MSG_ID;
-	m_Device_HuiKong_DIO.m_CommPara.m_hWnd		= this->GetSafeHwnd();
-	m_Device_HuiKong_DIO.m_bXModem				= false;
-
 	
-	CommStr = _T("COM1");
-	if(m_Device_HuiKong_DIO.OpenComm(CommStr, &m_Device_HuiKong_DIO.m_CommPara) == 0)
-	{
-		m_Device_HuiKong_DIO.m_CommPara.ReadThread = AfxBeginThread(ReadCommThreadProc_PLC, (LPVOID)(&m_Device_HuiKong_DIO.m_CommPara), THREAD_PRIORITY_NORMAL);
-	}
+	
+	
 
 	
 
-	CString NameList[9] = 
-	{
-		_T("(COM2)"),
-		_T("Ch A"),
-		_T("Ch B"),
-		_T("Ch C"),
-		_T("Ch D"),
-		_T("Ch E"),
-		_T("Ch F"),
-		_T("Ch G"),
-		_T("Ch H"),
-	};
-
-
-	for (int i = 0; i < 9; i++)
-	{
-		CommStr = _T("");
-		
-		m_Device_HotLong_PCB[i].m_CommPara.comm			= m_Device_HotLong_PCB[i].m_Comm;
-		m_Device_HotLong_PCB[i].m_CommPara.MessageID	= Comm_PROGRAM_MSG_ID + i;
-		m_Device_HotLong_PCB[i].m_CommPara.m_hWnd		= this->GetSafeHwnd();
-		m_Device_HotLong_PCB[i].m_bXModem				= false;
-		
-		
-		
-		if(CommNameArray.GetSize() > 0)
-		{
-			for(int x = 0; x < CommNameArray.GetSize(); x++)
-			{
-				CString s1 = CommNameArray.GetAt(x).m_FriendName;
-				if(s1.Find(NameList[i]) > 0)
-				{
-					CommStr = CommNameArray.GetAt(x).m_FileName;
-					break;
-				}
-			}
-			
-			
-			
-			if(CommStr.GetLength() == 0)
-			{
-				CString ss;
-				ss.Format(_T("没有对应的 %s 口"), NameList[i]);
-				AfxMessageBox(ss);
-			}
-			else
-			{
-				if(m_Device_HotLong_PCB[i].OpenComm(CommStr, &m_Device_HotLong_PCB[i].m_CommPara) == 0)
-				{
-					m_Device_HotLong_PCB[i].m_CommPara.ReadThread = AfxBeginThread(ReadCommThreadProc_PCB, (LPVOID)(&m_Device_HotLong_PCB[i].m_CommPara), THREAD_PRIORITY_NORMAL);
-				}
-			}
-			
-		}
-		else
-		{
-			CString ss;
-			ss.Format(_T("没有对应的 COMM %d口"), i+1);
-			AfxMessageBox(ss);
-		}
 	
-		
-	}
+
+	
+
+
+	
 
 	
 	m_Program_Pass_Counts	= m_ConfigData.m_Program_Pass_Counts;
@@ -712,6 +669,16 @@ BOOL CHotLong_PCBDlg::OnInitDialog()
 	SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_6, false);
 	SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_7, false);
 	SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_8, false);
+
+
+	this->RegisterUsbComNotify();
+	this->RegisterUsbCameraNotify();
+	RegisterUsbCameraNotify_2();
+
+	int v;
+	
+	
+	this->SetTimer(1, 50, NULL);
 
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -830,7 +797,7 @@ void CHotLong_PCBDlg::ReMoveWindows_BIG_AMP(void)
 			int height = rect.Height() / 8;
 
 			this->m_STATIC_DEGREE.MoveWindow(left,height,width  ,height ,true);
-			this->m_Edit_Degree.MoveWindow(left + width ,height,width  ,height ,true);
+			this->m_Edit_Degree.MoveWindow(left + width ,height,width*2  ,height ,true);
 
 			this->m_STATIC_LEFT.MoveWindow(left,height * 2,width  ,height ,true);
 			this->m_STATIC_RIGHT.MoveWindow(left,height * 3,width  ,height ,true);
@@ -1403,10 +1370,8 @@ void CHotLong_PCBDlg::ReMoveWindows_X90(void)
 
 			this->m_staticScreen.MoveWindow(0,0,CAMERA_WIDTH,CAMERA_HEIGHT,true);
 
-			w = GetDlgItem(IDOK);
-			w->ShowWindow(SW_HIDE);
-			w = GetDlgItem(IDC_BUTTON_PHOTO);
-			w->ShowWindow(SW_HIDE);
+			//w = GetDlgItem(IDC_BUTTON_PHOTO);
+			//w->ShowWindow(SW_HIDE);
 
 
 			/*int ID = ::m_ConfigData.m_Camera_Nr;
@@ -1486,6 +1451,8 @@ void CHotLong_PCBDlg::ReMoveWindows_X90(void)
 						m_ConfigData.m_LED_NUM_Bottom[3] - m_ConfigData.m_LED_NUM_Top[3]  ,true);
 				}
 */
+
+			this->m_CheckFocus.MoveWindow(left + width * 0 ,height * 6,width  ,height*2 ,true);
 
 			// 加热指示灯区域
 			left = CAMERA_WIDTH + (wnd_width - CAMERA_WIDTH) * 0.4;
@@ -2069,22 +2036,14 @@ void CHotLong_PCBDlg::OnBnClickedOk()
 	// TODO: 在此添加控件通知处理程序代码
 	//OnOK();
 
-	this->m_ParaDlg.DoModal();
+	//this->m_ParaDlg.DoModal();
 }
 
-void CHotLong_PCBDlg::OnBnClickedButton1()
-{
-	// TODO: 在此添加控件通知处理程序代码
-
-	StartVideo();
-	m_cap.GrabOneFrame(true);
-
-}
 
 
 void ReadConfig(void)
 {
-	CString sDir = _T("C:\\data");
+/*	CString sDir = _T("C:\\data");
 
 	if (!PathIsDirectory(sDir))
 	{
@@ -2103,31 +2062,6 @@ void ReadConfig(void)
 		{
 			memset(&m_ConfigData,0,sizeof(m_ConfigData));
 
-	/*		for (int i = 0; i < 4; i++)
-			{
-				m_ConfigData.m_LED_NUM_Left[i] = 310;
-				m_ConfigData.m_LED_NUM_Right[i] = 540;
-				m_ConfigData.m_LED_NUM_Top[i] = 200;
-				m_ConfigData.m_LED_NUM_Bottom[i] = 280;
-			}
-
-			m_ConfigData.m_LED_HEAT_Left	= 320;
-			m_ConfigData.m_LED_HEAT_Right	= 370;
-			m_ConfigData.m_LED_HEAT_Top		= 310;
-			m_ConfigData.m_LED_HEAT_Bottom	= 340;
-
-			m_ConfigData.m_LED_COOL_Left	= 390;
-			m_ConfigData.m_LED_COOL_Right	= 440;
-			m_ConfigData.m_LED_COOL_Top		= 310;
-			m_ConfigData.m_LED_COOL_Bottom	= 340;
-
-
-			m_ConfigData.m_LED_COLOR_Left	= 460;
-			m_ConfigData.m_LED_COLOR_Right	= 510;
-			m_ConfigData.m_LED_COLOR_Top	= 310;
-			m_ConfigData.m_LED_COLOR_Bottom = 340;
-*/
-
 		}
 
 		
@@ -2136,11 +2070,65 @@ void ReadConfig(void)
 	{
 		AfxMessageBox(_T("Read f.Open(_T(\"c:\\Config.bin\") Fail"));
 	}
+*/
+	m_ConfigData.m_LED_NUM_Left[0] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_LEFT_1);
+	m_ConfigData.m_LED_NUM_Left[1] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_LEFT_2);
+	m_ConfigData.m_LED_NUM_Left[2] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_LEFT_3);
+	m_ConfigData.m_LED_NUM_Left[3] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_LEFT_4);
+
+	m_ConfigData.m_LED_NUM_Right[0] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_RIGHT_1);
+	m_ConfigData.m_LED_NUM_Right[1] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_RIGHT_2);
+	m_ConfigData.m_LED_NUM_Right[2] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_RIGHT_3);
+	m_ConfigData.m_LED_NUM_Right[3] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_RIGHT_4);
+
+	m_ConfigData.m_LED_NUM_Bottom[0] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_BOTTOM_1);
+	m_ConfigData.m_LED_NUM_Bottom[1] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_BOTTOM_2);
+	m_ConfigData.m_LED_NUM_Bottom[2] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_BOTTOM_3);
+	m_ConfigData.m_LED_NUM_Bottom[3] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_BOTTOM_4);
+
+	m_ConfigData.m_LED_NUM_Top[0] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_TOP_1);
+	m_ConfigData.m_LED_NUM_Top[1] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_TOP_2);
+	m_ConfigData.m_LED_NUM_Top[2] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_TOP_3);
+	m_ConfigData.m_LED_NUM_Top[3] = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_NUM_TOP_4);
+
+
+	m_ConfigData.m_LED_HEAT_Left	= CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_HEAT_LEFT);
+	m_ConfigData.m_LED_HEAT_Right	= CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_HEAT_RIGHT);
+	m_ConfigData.m_LED_HEAT_Top		= CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_HEAT_TOP);
+	m_ConfigData.m_LED_HEAT_Bottom	= CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_HEAT_BOTTOM);
+
+	m_ConfigData.m_LED_COOL_Left	= CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_COOL_LEFT);
+	m_ConfigData.m_LED_COOL_Right	= CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_COOL_RIGHT);
+	m_ConfigData.m_LED_COOL_Top		= CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_COOL_TOP);
+	m_ConfigData.m_LED_COOL_Bottom	= CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_COOL_BOTTOM);
+
+	m_ConfigData.m_LED_COLOR_Left	= CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_COLOR_LEFT);
+	m_ConfigData.m_LED_COLOR_Right	= CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_COLOR_RIGHT);
+	m_ConfigData.m_LED_COLOR_Top	= CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_COLOR_TOP);
+	m_ConfigData.m_LED_COLOR_Bottom = CHotLong_PCBDlg::GetProfileInt(IDC_EDIT_LED_COLOR_BOTTOM);
+	
+	m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_1	=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_AGING_1);
+	m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_2	=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_AGING_2);
+	m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_3	=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_AGING_3);
+	m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_4	=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_AGING_4);
+	m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_5	=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_AGING_5);
+	m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_6	=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_AGING_6);
+	m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_7	=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_AGING_7);
+	m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_8	=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_AGING_8);
+	
+	m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID		=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_MINUS_KEY	);
+	m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID			=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_PLUS_KEY	);
+	m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID			=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_SET_KEY		);
+	m_ConfigData.m_Device_HuiKong_DIO_Y_TEST_NEEDLE_ID	=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_TEST_NEEDLE	);
+	m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID=	CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PLC_Y_TEST_START	);
+	m_ConfigData.m_Pcb_Type								=	(PCB_TYPE)CHotLong_PCBDlg::GetProfileInt(IDC_COMBO_PCB_TYPE			);
+
+
 }
 
 void SaveConfig(void)
 {
-	CString sDir = _T("C:\\data");
+/*	CString sDir = _T("C:\\data");
 
 	if (!PathIsDirectory(sDir))
 	{
@@ -2158,16 +2146,82 @@ void SaveConfig(void)
 	{
 		AfxMessageBox(_T("Save f.Open(_T(\"c:\\Config.bin\") Fail"));
 	}
+*/
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_LEFT_1,m_ConfigData.m_LED_NUM_Left[0]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_LEFT_2,m_ConfigData.m_LED_NUM_Left[1]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_LEFT_3,m_ConfigData.m_LED_NUM_Left[2]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_LEFT_4,m_ConfigData.m_LED_NUM_Left[3]);
+
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_RIGHT_1,m_ConfigData.m_LED_NUM_Right[0]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_RIGHT_2,m_ConfigData.m_LED_NUM_Right[1]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_RIGHT_3,m_ConfigData.m_LED_NUM_Right[2]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_RIGHT_4,m_ConfigData.m_LED_NUM_Right[3]);
+
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_BOTTOM_1,m_ConfigData.m_LED_NUM_Bottom[0]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_BOTTOM_2,m_ConfigData.m_LED_NUM_Bottom[1]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_BOTTOM_3,m_ConfigData.m_LED_NUM_Bottom[2]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_BOTTOM_4,m_ConfigData.m_LED_NUM_Bottom[3]);
+
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_TOP_1,m_ConfigData.m_LED_NUM_Top[0]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_TOP_2,m_ConfigData.m_LED_NUM_Top[1]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_TOP_3,m_ConfigData.m_LED_NUM_Top[2]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_NUM_TOP_4,m_ConfigData.m_LED_NUM_Top[3]);
+
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_HEAT_LEFT,m_ConfigData.m_LED_HEAT_Left);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_HEAT_RIGHT,m_ConfigData.m_LED_HEAT_Right);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_HEAT_TOP,m_ConfigData.m_LED_HEAT_Top);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_HEAT_BOTTOM,m_ConfigData.m_LED_HEAT_Bottom);
+
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_COOL_LEFT,m_ConfigData.m_LED_COOL_Left);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_COOL_RIGHT,m_ConfigData.m_LED_COOL_Right);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_COOL_TOP,m_ConfigData.m_LED_COOL_Top);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_COOL_BOTTOM,m_ConfigData.m_LED_COOL_Bottom);
+
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_COLOR_LEFT,m_ConfigData.m_LED_COLOR_Left);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_COLOR_RIGHT,m_ConfigData.m_LED_COLOR_Right);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_COLOR_TOP,m_ConfigData.m_LED_COLOR_Top);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_EDIT_LED_COLOR_BOTTOM,m_ConfigData.m_LED_COLOR_Bottom);
+
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_COMM_AGING_1, m_ConfigData.m_Comm_Nr[1]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_COMM_AGING_2, m_ConfigData.m_Comm_Nr[2]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_COMM_AGING_3, m_ConfigData.m_Comm_Nr[3]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_COMM_AGING_4, m_ConfigData.m_Comm_Nr[4]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_COMM_AGING_5, m_ConfigData.m_Comm_Nr[5]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_COMM_AGING_6, m_ConfigData.m_Comm_Nr[6]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_COMM_AGING_7, m_ConfigData.m_Comm_Nr[7]);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_COMM_AGING_8, m_ConfigData.m_Comm_Nr[8]);
+
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_COMM, m_ConfigData.m_Comm_Device_HuiKong_DIO);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_CAMERA, m_ConfigData.m_Camera_Nr);
+
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_AGING_1, m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_1);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_AGING_2, m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_2);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_AGING_3, m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_3);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_AGING_4, m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_4);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_AGING_5, m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_5);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_AGING_6, m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_6);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_AGING_7, m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_7);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_AGING_8, m_ConfigData.m_Device_HuiKong_DIO_Y_Aging_Power_8);
+	
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_MINUS_KEY,		m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_PLUS_KEY,		m_ConfigData.m_Device_HuiKong_DIO_Y_PLUS_ID);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_SET_KEY,		m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_TEST_NEEDLE,	m_ConfigData.m_Device_HuiKong_DIO_Y_TEST_NEEDLE_ID);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PLC_Y_TEST_START,	m_ConfigData.m_Device_HuiKong_DIO_Y_PROGRAM_BEGIN_ID);
+	CHotLong_PCBDlg::WriteProfileInt(IDC_COMBO_PCB_TYPE,			m_ConfigData.m_Pcb_Type);
+
+
 }
 
 
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumLeft_1()
 {
+	
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumRight_1()
@@ -2175,7 +2229,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumRight_1()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumTop_1()
@@ -2183,7 +2237,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumTop_1()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumBottom_1()
@@ -2191,7 +2245,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumBottom_1()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumLeft_2()
@@ -2199,7 +2253,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumLeft_2()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumRight_2()
@@ -2207,7 +2261,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumRight_2()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumTop_2()
@@ -2215,7 +2269,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumTop_2()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumBottom_2()
@@ -2223,7 +2277,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumBottom_2()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumLeft_3()
@@ -2231,7 +2285,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumLeft_3()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumRight_3()
@@ -2239,7 +2293,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumRight_3()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumTop_3()
@@ -2247,7 +2301,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumTop_3()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumBottom_3()
@@ -2255,7 +2309,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumBottom_3()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumLeft_4()
@@ -2263,7 +2317,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumLeft_4()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumRight_4()
@@ -2271,7 +2325,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumRight_4()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumTop_4()
@@ -2279,7 +2333,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumTop_4()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedNumBottom_4()
@@ -2287,7 +2341,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedNumBottom_4()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedHeatLeft()
@@ -2295,7 +2349,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedHeatLeft()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedHeatRight()
@@ -2303,7 +2357,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedHeatRight()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedHeatTop()
@@ -2311,7 +2365,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedHeatTop()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedHeatBottom()
@@ -2319,7 +2373,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedHeatBottom()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedCoolLeft()
@@ -2327,7 +2381,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedCoolLeft()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedCoolRight()
@@ -2335,7 +2389,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedCoolRight()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedCoolTop()
@@ -2343,7 +2397,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedCoolTop()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedCoolBottom()
@@ -2351,7 +2405,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedCoolBottom()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedColorLeft()
@@ -2359,7 +2413,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedColorLeft()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedColorRight()
@@ -2367,7 +2421,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedColorRight()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedColorTop()
@@ -2375,7 +2429,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedColorTop()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditLedColorBottom()
@@ -2383,7 +2437,7 @@ void CHotLong_PCBDlg::OnEnChangeEditLedColorBottom()
 	this->UpdateData();
 	SaveConfig();
 	this->RedrawWindow();
-	this->StartVideo();
+	//this->StartVideo();
 }
 
 void CHotLong_PCBDlg::OnEnChangeEditSv_1()
@@ -2650,14 +2704,14 @@ CString CreateCurDateDirection(int BoxNr, CTime cur)
 	CString sDir;
 	CString s;
 
-	sDir = _T("C:\\data");
+	sDir = _T("D:\\data");
 
 	if (!PathIsDirectory(sDir))
 	{
 		::CreateDirectory(sDir, NULL);
 	}
 
-	sDir = _T("c:\\data\\log");
+	sDir = _T("D:\\data\\log");
 
 	//sDir = theAppDirectory + sDir;
 
@@ -2715,9 +2769,9 @@ CString GetDateDirection(int m_BoxNr, CTime t)
 	CString sDir;
 	CString s;
 
-	sDir = _T("log");
+	sDir = _T("d:\\data\\log");
 
-	sDir = theAppDirectory + sDir;
+	//sDir = theAppDirectory + sDir;
 
 	if (!PathIsDirectory(sDir))
 	{
@@ -3753,7 +3807,25 @@ void CHotLong_PCBDlg::SavePassFail()
 void CHotLong_PCBDlg::SetResult_Program(bool pass)
 {
 	CTime tm = CTime::GetCurrentTime(); // 获取当前时间 
-	CString s = tm.Format(_T("%H:%M:%S "));
+	CString s;
+	if(pass == false)
+	{
+		CString file_name;
+		CString s;
+		CreateCurDateDirection(0, tm);
+		file_name = GetDateDirection(0, tm);
+		file_name += _T("\\");
+		s = tm.Format(_T("%H_%M_%S_"));
+		file_name += s;
+		file_name += m_Device_HotLong_PCB[0].m_BarCode;
+		file_name += _T(".JPG");
+		
+		CRect rect;
+		m_staticScreen.GetClientRect(&rect);
+		CaptureLocalScreen(rect,file_name);
+	}
+	
+	s = tm.Format(_T("%H:%M:%S "));
 	CString msgLog;
 	this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_SET_ID, false);
 	this->SetRelay(m_ConfigData.m_Device_HuiKong_DIO_Y_MINUS_ID, false);
@@ -3793,7 +3865,7 @@ void CHotLong_PCBDlg::ClickedButtonStart(int ButtonID)
 	CString s = tm.Format(_T("%H:%M:%S "));
 	CString msg;
 #ifndef _DEBUG
-	if(this->m_Device_HuiKong_DIO.m_hComm == INVALID_HANDLE_VALUE)
+	if(this->m_Device_HuiKong_DIO.m_hComm == (HANDLE)INVALID_HANDLE_VALUE)
 	{
 		AfxMessageBox(_T("没有找到 PLC 对应的通信口!"));
 		return;
@@ -3806,11 +3878,13 @@ void CHotLong_PCBDlg::ClickedButtonStart(int ButtonID)
 		return;
 	}
 
-
-	if(this->m_Device_HotLong_PCB[ButtonID].m_hComm == INVALID_HANDLE_VALUE)
+	if(ButtonID > 0)
 	{
-		AfxMessageBox(_T("没有找到 对应的通信口!"));
-		return;
+		if(this->m_Device_HotLong_PCB[ButtonID].m_hComm == INVALID_HANDLE_VALUE)
+		{
+			AfxMessageBox(_T("没有找到 对应的通信口!"));
+			return;
+		}
 	}
 #endif
 
@@ -4175,8 +4249,8 @@ void CHotLong_PCBDlg::OnTimer(UINT_PTR nIDEvent)
 	Timer++;
 	//BeepMode();
 
-	if (Timer == 4)
-	{//200ms
+	if (Timer == 5)
+	{//250ms
 		for (int i = 0; i < 9; i++)
 		{
 			switch(m_ConfigData.m_Pcb_Type)
@@ -4196,7 +4270,9 @@ void CHotLong_PCBDlg::OnTimer(UINT_PTR nIDEvent)
 		}
 		TimerSend_PLC();
 		Timer = 0;
+	
 		StartVideo();
+
 	}
 
 	SYSTEM_INFO si;
@@ -4239,13 +4315,38 @@ void CHotLong_PCBDlg::OnTimer(UINT_PTR nIDEvent)
         }
     }
 	CString strInfo;
-	strInfo.Format(_T("  进程id:%d 已使用内存:%d KB"), pid, usedMemory);
+	if(usedMemory > 0)
+	{
+		if(usedMemory > m_UsedMemory_Max)
+		{
+			m_UsedMemory_Max		  = usedMemory;
+		}
+		if(usedMemory < m_UsedMemory_Min)
+		{
+			m_UsedMemory_Min		  = usedMemory;
+		}
+	}
+	strInfo.Format(_T("  进程id:%d 已使用内存:%08d KB,%08d KB,%08d KB"), pid, usedMemory,m_UsedMemory_Min,m_UsedMemory_Max);
 	
+
+	if(m_StartVideo_UsedTime > 0 && m_StartVideo_UsedTime < 10000)
+	{
+		if(m_StartVideo_UsedTime > m_StartVideo_UsedTime_Max)
+		{
+			m_StartVideo_UsedTime_Max		  = m_StartVideo_UsedTime;
+		}
+		if(m_StartVideo_UsedTime < m_StartVideo_UsedTime_Min)
+		{
+			m_StartVideo_UsedTime_Min		  = m_StartVideo_UsedTime;
+		}
+	}
+
 	CTime cur;
 	cur = cur.GetCurrentTime();
 	CString s;
-	TCHAR format[] = _T("  %04d-%02d-%02d %02d:%02d:%02d ");
-	s.Format(format,cur.GetYear(),cur.GetMonth(),cur.GetDay(),cur.GetHour(),cur.GetMinute(),cur.GetSecond());
+	TCHAR format[] = _T("  %04d-%02d-%02d %02d:%02d:%02d 图像处理时间：%05d,%05d,%05d,");
+	s.Format(format,cur.GetYear(),cur.GetMonth(),cur.GetDay(),cur.GetHour(),cur.GetMinute(),cur.GetSecond(),
+		m_StartVideo_UsedTime,m_StartVideo_UsedTime_Min,m_StartVideo_UsedTime_Max);
 
 	s = _T("江阴辉龙线路板测试系统  ") + s;
 
@@ -4302,10 +4403,15 @@ void CHotLong_PCBDlg::TimerSend_PLC()
 
 
 
-
-	if(m_Device_HuiKong_DIO.SendWaitCmd(&m_Device_HuiKong_DIO)  == 0 )
+	int ret = m_Device_HuiKong_DIO.SendWaitCmd(&m_Device_HuiKong_DIO);
+	if(ret == 0)
 	{
 		m_Device_HuiKong_DIO.Read_Y(&m_Device_HuiKong_DIO,0,16);
+	}
+	else if(ret < 0)
+	{
+		m_Device_HuiKong_DIO.CloseComm();
+		this->m_ListMsg[0].AddString(_T("无法找到 PLC 串口 COM1"));
 	}
 	this->m_ParaDlg.DisplaySend_PLC(m_Device_HuiKong_DIO.m_LastSendCmd);
 
@@ -4385,22 +4491,22 @@ void CHotLong_PCBDlg::OnBnClickedCancel()
 	CDialog::OnCancel();
 }
 
-void CHotLong_PCBDlg::StartVideo(void)
+void StartVideo( CHotLong_PCBDlg * HotLong_PCBDlg)
 {
 	// TODO: 在此添加控件通知处理程序代码
-	static HWND hWnd = NULL;
-	if (hWnd != NULL)
-	{
-		return;
-	}
+	//static HWND hWnd = NULL;
 	
-	if(!this->IsWindowVisible())
+	
+	if(!HotLong_PCBDlg->IsWindowVisible())
 	{
 		return;
 	}
 
+	
+
+
 	CWnd* pWnd;
-	pWnd = GetDlgItem(IDC_STATIC_SCREEN);    //获取控件指针，IDC_BUTTON1为控件ID号
+	pWnd = HotLong_PCBDlg->GetDlgItem(IDC_STATIC_SCREEN);    //获取控件指针，IDC_BUTTON1为控件ID号
 
 //	while (1)
 	{
@@ -4412,7 +4518,8 @@ void CHotLong_PCBDlg::StartVideo(void)
 		CPen whitePen, * pOldPen; //OldPen用来保存原指针
 		whitePen.CreatePen(0, 1, RGB(0, 255, 0));//创建画笔，（样式，宽度，颜色）
 		pOldPen = picDC->SelectObject(&whitePen);//选入上下文
-		if (m_CheckFocus.GetCheck())
+		/*
+		if (HotLong_PCBDlg->m_CheckFocus.GetCheck())
 		{
 			for (int i = 0; i < 4; i++)
 			{
@@ -4423,7 +4530,7 @@ void CHotLong_PCBDlg::StartVideo(void)
 				picDC->LineTo(m_ConfigData.m_LED_NUM_Left[i], m_ConfigData.m_LED_NUM_Top[i]);//当前位置保持在P1位置
 			}
 
-			this->UpdateData();
+			HotLong_PCBDlg->UpdateData();
 
 			picDC->MoveTo(m_ConfigData.m_LED_HEAT_Left, m_ConfigData.m_LED_HEAT_Top);
 			picDC->LineTo(m_ConfigData.m_LED_HEAT_Right, m_ConfigData.m_LED_HEAT_Top);//当前位置保持在P1位置
@@ -4448,6 +4555,91 @@ void CHotLong_PCBDlg::StartVideo(void)
 		}
 
 		picDC->SelectObject(pOldPen);//恢复上下文
+	*/
+		SYSTEMTIME t1,t2;
+		GetLocalTime(&t1);
+		if(m_ConfigData.m_Pcb_Type == PCB_TYPE_BIG_AMP
+			|| m_ConfigData.m_Pcb_Type == PCB_TYPE_BIG_AMP_NO_BARCODE)
+		{
+			HotLong_PCBDlg->Led_Num();
+		}
+		HotLong_PCBDlg->Led_Heat();
+		HotLong_PCBDlg->Led_Cool();
+		HotLong_PCBDlg->Led_Color();
+
+			GetLocalTime(&t2);
+	
+		int t = t2.wMilliseconds-t1.wMilliseconds;
+		if(t < 0)
+		{
+			t += 1000;
+		}
+		HotLong_PCBDlg->m_StartVideo_UsedTime = t;
+		
+		
+	}
+	
+
+	
+}
+void CHotLong_PCBDlg::InitVideo(void)
+{
+
+	m_cap.ReleaseMem();
+
+	//m_ListCtrl.ResetContent();
+	m_cap.m_CameraName.RemoveAll();
+	m_cap.EnumDevices(&m_cap.m_CameraName);
+	for(int i = 0; i < m_cap.m_CameraName.GetSize(); i++)
+	{
+		m_ListCtrl.InsertString(0,m_cap.m_CameraName.GetAt(i));
+	}
+	
+
+	if(m_ListCtrl.GetCount() > 0 
+		&& m_ConfigData.m_Camera_Nr >= 0 
+		&& m_ConfigData.m_Camera_Nr < m_cap.m_CameraName.GetSize())
+	{
+		m_cap.Init(m_ConfigData.m_Camera_Nr,this->m_staticScreen);
+	}
+	else
+	{
+		m_ListCtrl.InsertString(0,_T("无此编号的摄像头"));
+	}
+}
+void CHotLong_PCBDlg::StartVideo( void)
+{
+	// TODO: 在此添加控件通知处理程序代码
+	//static HWND hWnd = NULL;
+	
+
+	
+	if(!IsWindowVisible())
+	{
+		return;
+	}
+
+	if(this->m_Device_HotLong_PCB[0].m_SubMode == 0
+		&& this->m_CheckFocus.GetCheck() == 0)
+	{
+		return;
+	}
+
+	if(m_Doing == true)
+	{	//	AfxMessageBox(_T("busy"));
+	//	return;
+	}
+
+
+	m_Doing = true;
+
+	CWnd* pWnd;
+	pWnd = GetDlgItem(IDC_STATIC_SCREEN);    //获取控件指针，IDC_BUTTON1为控件ID号
+
+
+	{
+		
+		
 	
 		SYSTEMTIME t1,t2;
 		GetLocalTime(&t1);
@@ -4455,6 +4647,8 @@ void CHotLong_PCBDlg::StartVideo(void)
 			|| m_ConfigData.m_Pcb_Type == PCB_TYPE_BIG_AMP_NO_BARCODE)
 		{
 			Led_Num();
+			
+
 		}
 		Led_Heat();
 		Led_Cool();
@@ -4462,28 +4656,20 @@ void CHotLong_PCBDlg::StartVideo(void)
 
 			GetLocalTime(&t2);
 	
-	int t = t2.wMilliseconds-t1.wMilliseconds;
-	if(t < 0)
-	{
-		t += 1000;
-	}
-	CString s;
-	CString text = _T("江阴辉龙线路板测试系统 编译时间:");
-	text += __DATE__;
-	text += _T(" ");
-	text += __TIME__;
+		int t = t2.wMilliseconds-t1.wMilliseconds;
+		if(t < 0)
+		{
+			t += 1000;
+		}
 
-	
-	s.Format(_T(" 图像处理时间 %dms"),t);
-	text += s;
-	//AfxMessageBox(s);
-	//this->SetWindowTextW(text);
+		m_StartVideo_UsedTime = t;
+		
+		
 	}
 	
-	hWnd = NULL;
+	m_Doing = false;
 	
 }
-
 void CHotLong_PCBDlg::Take_Screenshot_To_File(CImage *source_image,int Left,int Top,int Right,int Bottom,CString fileName )
 {
 	
@@ -4578,12 +4764,13 @@ void CHotLong_PCBDlg::ShowLedNumPicture(CImage *Image,int ID)
 		ImageDrawRect(Image, Rect_a5);
 		ImageDrawRect(Image, Rect_a6);
 		ImageDrawRect(Image, Rect_a7);
+		
 	}
 	
 	Image->Draw(pDc->m_hDC, led_num_pic_rect);                //将图片绘制到Picture控件表示的矩形区域
 
 	
-pWnd->ReleaseDC(pDc);
+	pWnd->ReleaseDC(pDc);
 	//read_led_main();
 
 }
@@ -4621,59 +4808,41 @@ void CHotLong_PCBDlg::SaveOnlyRedColor(CImage* image, unsigned int ColorBits, un
 
 void CHotLong_PCBDlg::ImageDrawRect(CImage *image,CRect rect)
 {
+	COLORREF cr = RGB(0, 255, 0);
 	for (int x = rect.left; x < rect.right; x++)
 	{
-		image->SetPixel(x, rect.top, RGB(255, 0, 0));
-		image->SetPixel(x, rect.bottom, RGB(255, 0, 0));
+		image->SetPixel(x, rect.top, cr);
+		image->SetPixel(x, rect.bottom, cr);
 	}
 	for (int x = rect.top; x < rect.bottom; x++)
 	{
-		image->SetPixel(rect.left, x, RGB(255, 0, 0));
-		image->SetPixel(rect.right, x, RGB(255, 0, 0));
+		image->SetPixel(rect.left, x, cr);
+		image->SetPixel(rect.right, x, cr);
 	}
 }
 
 bool CHotLong_PCBDlg::center(CImage * image, CRect rect)
 {	
 
-/*	for (int x = rect.left; x < rect.right; x++)
-	{
-		for (int y = rect.top; y < rect.bottom; y++)
-		{
-			COLORREF c = image->GetPixel(x, y);
 
-			int c_r, c_g, c_b;
-			 c_r = R_BITS & c;
-			 c_g = G_BITS & c;
-			 c_b = B_BITS & c;
-	
-			if (c_r > R_BITS_MIN
-				&& c_g > G_BITS_MIN
-				&& c_b > B_BITS_MIN)
-			{
-				image->SetPixel(x, y, 0x00FFFFFF);
-			}
-			else
-			{
-		//		image->SetPixel(x, y, 0);
-			}
-
-		}
-	}
-*/
 
 	int x = rect.left + rect.Width() / 2;
 	int y = rect.top + rect.Height() / 2;
-	COLORREF c = image->GetPixel(x, y);
+	COLORREF c;// = image->GetPixel(x, y);
 	
 	
 
 	int counts = 0;
+//#define STD_RGB RGB(255, 255, 255)
+
+#define STD_RGB RGB(0xC0, 0xC0, 0xC0)
+
 	for (int i = 0; i < x; i++)
 	{
 		for (int j = 0; j < y; j++)
 		{
-			if (image->GetPixel(x, y) == RGB(255, 255, 255))
+			c = image->GetPixel(x, y);
+			if ( (c & STD_RGB) == STD_RGB )
 			{
 				counts++;
 			}
@@ -4690,6 +4859,45 @@ bool CHotLong_PCBDlg::center(CImage * image, CRect rect)
 	*/
 	return false;
 }
+
+//	 0-0.3 0.35--0.65 0.7--1.0w
+//		      a1				    0.2h
+//    a2    space_1      a3			0.2h
+//            a4				    0.2h
+//	  a5    space_2      a6			0.2h
+//            a7				    0,2h
+#define LED_a1	0x01
+#define LED_a2	0x02
+#define LED_a3	0x04
+#define LED_a4	0x08
+#define LED_a5	0x10
+#define LED_a6	0x20
+#define LED_a7	0x40
+#define LED_dot	0x80
+unsigned char LED_09[10] =
+{
+	LED_a1 +  LED_a2 +  LED_a3 +  LED_a5 +  LED_a6 +  LED_a7,	//0
+	LED_a3 +  LED_a6,											//1
+	LED_a1 +  LED_a3 +  LED_a4 +  LED_a5 +  LED_a7,				//2
+	LED_a1 +  LED_a3 +  LED_a4 +  LED_a6 +  LED_a7,				//3
+	LED_a2 +  LED_a3 +  LED_a4 +  LED_a6,						//4
+	LED_a1 +  LED_a2 +  LED_a4 +  LED_a6 +  LED_a7,				//5
+	LED_a1 +  LED_a2 +  LED_a4 +  LED_a5 +  LED_a6 +  LED_a7,	//6
+	LED_a1 +  LED_a3 +  LED_a6,									//7
+	LED_a1 +  LED_a2 +  LED_a3 +  LED_a4 +  LED_a5 +  LED_a6 +  LED_a7,//8
+	LED_a1 +  LED_a2 +  LED_a3 +  LED_a4 +  LED_a6 +  LED_a7		//9
+};
+
+#define LED_S	(LED_a1+ LED_a4 + LED_a7)
+#define LED_H (LED_a2 + LED_a3 + LED_a4 + LED_a5  + LED_a6)
+#define LED_n (LED_a4 + LED_a5 + LED_a6)
+#define LED_o (LED_a4 + LED_a5 + LED_a6 + LED_a7)
+#define LED_A (LED_a1 + LED_a2 + LED_a3 + LED_a4 + LED_a5 + LED_a6 )
+#define LED_T (LED_a2 + LED_a4 + LED_a5 + LED_a7 )
+#define LED_P (LED_a1 + LED_a2 + LED_a3 + LED_a4 + LED_a5 )
+#define LED_I (LED_a1 + LED_a3 + LED_a6 + LED_a7)
+#define LED_D (LED_a3 + LED_a4 + LED_a5 + LED_a6  + LED_a7)
+
 CString  CHotLong_PCBDlg::GetLedChar(int ID, CImage * image)
 {
 	int h = image->GetHeight();
@@ -4698,16 +4906,13 @@ CString  CHotLong_PCBDlg::GetLedChar(int ID, CImage * image)
 
 	int result;
 
-	bool a1, a2, a3, a4, a5, a6, a7, dot, space1，space2;
+	bool a1, a2, a3, a4, a5, a6, a7, dot, space1,space2;
 
+	
 
+	
 
-	//	 0-0.3 0.35--0.65 0.7--1.0w
-	//		      a1				    0.2h
-	//    a2    space_1      a3			0.2h
-	//            a4				    0.2h
-	//	  a5    space_2      a6			0.2h
-	//            a7				    0,2h
+	
 	CRect Rect_a1(0.40 * w, 0.00 * h, 0.70 * w, 0.20 * h);
 	CRect Rect_a2(0.10 * w, 0.20 * h, 0.40 * w, 0.40 * h);
 	CRect Rect_a3(0.70 * w, 0.20 * h, 1.00 * w-1, 0.40 * h);
@@ -4719,15 +4924,7 @@ CString  CHotLong_PCBDlg::GetLedChar(int ID, CImage * image)
 
 	CRect Rect_space1(0.45 * w, 0.20 * h, 0.55 * w, 0.40 * h);
 	CRect Rect_space2(0.45 * w, 0.60 * h, 0.55 * w, 0.80 * h);
-/*
-	m_Rect_a1[ID] = Rect_a1;
-	m_Rect_a2[ID] = Rect_a2;
-	m_Rect_a3[ID] = Rect_a3;
-	m_Rect_a4[ID] = Rect_a4;
-	m_Rect_a5[ID] = Rect_a5;
-	m_Rect_a6[ID] = Rect_a6;
-	m_Rect_a7[ID] = Rect_a7;
-*/	
+
 	ImageDrawRect(image, Rect_a1);
 	ImageDrawRect(image, Rect_a2);
 	ImageDrawRect(image, Rect_a3);
@@ -4735,127 +4932,166 @@ CString  CHotLong_PCBDlg::GetLedChar(int ID, CImage * image)
 	ImageDrawRect(image, Rect_a5);
 	ImageDrawRect(image, Rect_a6);
 	ImageDrawRect(image, Rect_a7);
-	image->Save(_T("c:\\work\\led_rect.bmp"));
+	
+	
+	//image->Save(_T("c:\\work\\led_rect.bmp"));
 	
 
 	CRect temp_rect;
 	
+	m_Hex[ID] = 0;
 
 	temp_rect = Rect_a1;
 	if (center(image, temp_rect))
+	{
+		m_Hex[ID] += LED_a1;
 		a1 = true;
+	}
 	else
 		a1 = false;
 	temp_rect = Rect_a2;
 	if (center(image, temp_rect))
+	{
+		m_Hex[ID] += LED_a2;
 		a2 = true;
+	}
 	else
 		a2 = false;
 	temp_rect = Rect_a3;
 	if (center(image, temp_rect))
+	{
+		m_Hex[ID] += LED_a3;
 		a3 = true;
+	}
 	else
 		a3 = false;
 	temp_rect = Rect_a4;
 	if (center(image, temp_rect))
+	{
+		m_Hex[ID] += LED_a4;
 		a4 = true;
+	}
 	else
 		a4 = false;
 	temp_rect = Rect_a5;
 	if (center(image, temp_rect))
+	{
+		m_Hex[ID] += LED_a5;
 		a5 = true;
+	}
 	else
 		a5 = false;
 	temp_rect = Rect_a6;
 	if (center(image, temp_rect))
+	{
+		m_Hex[ID] += LED_a6;
 		a6 = true;
+	}
 	else
 		a6 = false;
 
 	temp_rect = Rect_a7;
 	if (center(image, temp_rect))
+	{
+		m_Hex[ID] += LED_a7;
 		a7 = true;
+	}
 	else
 		a7 = false;
 
-	if (a1 == true && a2 == false && a3 == false && a4 == true && a5 == false && a6 == false && a7 == true)
+	//if (a1 == true && a2 == false && a3 == false && a4 == true && a5 == false && a6 == false && a7 == true)
+	if(m_Hex[ID] == LED_S)
 	{//
 		return _T("S");
 	}
-	else if (a1 == false && a2 == false && a3 == false && a4 == true && a5 == true && a6 == true && a7 == false)
+	else if (m_Hex[ID] == LED_n)//a1 == false && a2 == false && a3 == false && a4 == true && a5 == true && a6 == true && a7 == false)
 	{
+
 		return _T("n");
 	}
-	else if (a1 == false && a2 == false && a3 == false && a4 == true && a5 == true && a6 == true && a7 == true)
+	else if (m_Hex[ID] == LED_o)//a1 == false && a2 == false && a3 == false && a4 == true && a5 == true && a6 == true && a7 == true)
 	{
+
 		return _T("o");
 	}
 	
-	else if (a1 == true && a2 == true && a3 == true && a4 == false && a5 == true && a6 == true && a7 == true)
+	else if (m_Hex[ID] == LED_09[0])//a1 == true && a2 == true && a3 == true && a4 == false && a5 == true && a6 == true && a7 == true)
 	{
 		return _T("0");
 	}
-	else if (a1 == false && a2 == false && a3 == true && a4 == false && a5 == false && a6 == true && a7 == false)
+	else if (m_Hex[ID] == LED_09[1])//a1 == false && a2 == false && a3 == true && a4 == false && a5 == false && a6 == true && a7 == false)
 	{
 		return _T("1");
 	}
-	else if (a1 == true && a2 == false && a3 == true && a4 == true && a5 == true && a6 == false && a7 == true)
+	else if (m_Hex[ID] == LED_09[2])//a1 == true && a2 == false && a3 == true && a4 == true && a5 == true && a6 == false && a7 == true)
 	{
 		return _T("2");
 	}
-	else if (a1 == true && a2 == false && a3 == true && a4 == true && a5 == false && a6 == true && a7 == true)
+	else if (m_Hex[ID] == LED_09[3])//a1 == true && a2 == false && a3 == true && a4 == true && a5 == false && a6 == true && a7 == true)
 	{
 		return _T("3");
 	}
-	else if (a1 == false && a2 == true && a3 == true && a4 == true && a5 == false && a6 == true && a7 == false)
+	else if (m_Hex[ID] == LED_09[4])//a1 == false && a2 == true && a3 == true && a4 == true && a5 == false && a6 == true && a7 == false)
 	{
 		return _T("4");
 	}
-	else if (a1 == true && a2 == true && a3 == false && a4 == true && a5 == false && a6 == true && a7 == true)
+	else if (m_Hex[ID] == LED_09[5])//a1 == true && a2 == true && a3 == false && a4 == true && a5 == false && a6 == true && a7 == true)
 	{
 		return _T("5");
 	}
-	else if (a1 == true && a2 == true && a3 == false && a4 == true && a5 == true && a6 == true && a7 == true)
+	else if (m_Hex[ID] == LED_09[6])//a1 == true && a2 == true && a3 == false && a4 == true && a5 == true && a6 == true && a7 == true)
 	{
 		return _T("6");
 	}
-	else if (a1 == true && a2 == false && a3 == true && a4 == false && a5 == false && a6 == true && a7 == false)
+	else if (m_Hex[ID] == LED_09[7])//a1 == true && a2 == false && a3 == true && a4 == false && a5 == false && a6 == true && a7 == false)
 	{
 		return _T("7");
 	}
-	else if (a1 == true && a2 == true && a3 == true && a4 == true && a5 == true && a6 == true && a7 == true)
+	else if (m_Hex[ID] == LED_09[8])//a1 == true && a2 == true && a3 == true && a4 == true && a5 == true && a6 == true && a7 == true)
 	{
 		return _T("8");
 	}
-	else if (a1 == true && a2 == true && a3 == true && a4 == true && a5 == false && a6 == true && a7 == true)
+	else if (m_Hex[ID] == LED_09[9])//a1 == true && a2 == true && a3 == true && a4 == true && a5 == false && a6 == true && a7 == true)
 	{
 		return _T("9");
 	}
-	else if (a1 == true && a2 == true && a3 == true && a4 == true && a5 == true && a6 == true && a7 == false)
+	else if (m_Hex[ID] == LED_A)//a1 == true && a2 == true && a3 == true && a4 == true && a5 == true && a6 == true && a7 == false)
 	{
+
 		return _T("A");
 	}
-	else if (a1 == false && a2 == true && a3 == false && a4 == true && a5 == true && a6 == false && a7 == true)
+	else if (m_Hex[ID] == LED_T)//a1 == false && a2 == true && a3 == false && a4 == true && a5 == true && a6 == false && a7 == true)
 	{
+
 		return _T("T");
 	}
-	else if (a1 == true && a2 == true && a3 == true && a4 == true && a5 == true && a6 == false && a7 == false)
+	else if (m_Hex[ID] == LED_P)//a1 == true && a2 == true && a3 == true && a4 == true && a5 == true && a6 == false && a7 == false)
 	{
+		
 		return _T("P");
 	}
-	else if (a1 == true && a2 == false && a3 == true && a4 == false && a5 == false && a6 == true && a7 == true)
+	else if (m_Hex[ID] == LED_I)//a1 == true && a2 == false && a3 == true && a4 == false && a5 == false && a6 == true && a7 == true)
 	{
+		
 		return _T("I");
 	}
-	else if (a1 == false && a2 == false && a3 == true && a4 == true && a5 == true && a6 == true && a7 == true)
+	else if (m_Hex[ID] == LED_D)//a1 == false && a2 == false && a3 == true && a4 == true && a5 == true && a6 == true && a7 == true)
 	{
+		
 		return _T("D");
 	}
-	else if (a1 == false && a2 == true && a3 == true && a4 == true && a5 == true && a6 == true && a7 == false)
+	else if (m_Hex[ID] == LED_H)//a1 == false && a2 == true && a3 == true && a4 == true && a5 == true && a6 == true && a7 == false)
 	{
+		
 		return _T("H");
 	}
-	return _T(" ");
+	if(m_Hex[ID] == 0)
+	{
+		return _T(" ");
+	}
+	CString s;
+	s.Format(_T("[%02X]"),m_Hex[ID]);
+	return s;
 }
 
 int CHotLong_PCBDlg::getgrey(CImage image, int x, int y)
@@ -5074,7 +5310,7 @@ void CHotLong_PCBDlg::Led_Num(void)
 
 	
 
-	this->UpdateData(false);
+//	this->UpdateData(false);
 
 	
 	
@@ -5156,7 +5392,7 @@ void CHotLong_PCBDlg::ShowLedColorPicture(CImage *image)
 	this->m_Led_Color = ShowColorText(&m_Edit_Led_Color,r, g, b, pixels);
 
 
-	this->UpdateData(false);
+	//this->UpdateData(false);
 
 	//image.Save(_T("c:\\work\\LED_COLOR.png"));
 	CRect led_num_pic_rect;
@@ -5236,7 +5472,7 @@ void CHotLong_PCBDlg::ShowLedHeatPicture(CImage * image)
 	
 
 	
-	this->UpdateData(false);
+//	this->UpdateData(false);
 	//image.Save(_T("c:\\work\\LED_HEAT.png"));
 	CRect led_num_pic_rect;
 	CWnd* pWnd = GetDlgItem(IDC_PIC_LED_HEAT);
@@ -5245,7 +5481,7 @@ void CHotLong_PCBDlg::ShowLedHeatPicture(CImage * image)
 
 	CDC* pDc = pWnd->GetDC();
 
-	SetStretchBltMode(pDc->m_hDC, STRETCH_HALFTONE);//绘图前必须调用此函数（设置缩放模式），否则失真严重
+//	SetStretchBltMode(pDc->m_hDC, STRETCH_HALFTONE);//绘图前必须调用此函数（设置缩放模式），否则失真严重
 
 	//画图（以下两种方法都可）
 	//image.StretchBlt(pDc->m_hDC, rectPicture, SRCCOPY); //将图片绘制到Picture控件表示的矩形区域
@@ -5259,14 +5495,16 @@ void CHotLong_PCBDlg::ShowLedHeatPicture(CImage * image)
 
 unsigned int  CHotLong_PCBDlg::CheckColor(CImage *image,unsigned int ColorBits, unsigned int ColorMinVal)
 {
+
 	int width = image->GetWidth();
 	int height = image->GetHeight();
 	int counts = 0;
+	COLORREF c;
 	for (int x = 0; x < width; x++)
 	{
 		for (int y = 0; y < height; y++)
 		{
-			COLORREF c = image->GetPixel(x, y);
+			c = image->GetPixel(x, y);
 
 			c &= ColorBits;
 			if (c > ColorMinVal)
@@ -5301,7 +5539,7 @@ void CHotLong_PCBDlg::ShowLedCoolPicture(CImage *image)
 
 	this->m_Led_Cool = ShowColorText(&m_Edit_Led_Cool,r, g, b, pixels);
 	
-	this->UpdateData(false);
+	//this->UpdateData(false);
 
 	//image.Save(_T("c:\\work\\LED_COOL.png"));
 	CRect led_num_pic_rect;
@@ -5337,7 +5575,7 @@ DEFINE_GUID(GUID_DEVCLASS_PORTS,
 0x4D36E978, 0xE325, 0x11CE, 0xBF, 0xC1, 0x08, 0x00, 0x2B, 0xE1, 0x03, 0x18);
 #endif
 
-void EnumSerialPortFriendlyNames(CCommArray& portList)
+void CHotLong_PCBDlg::EnumSerialPortFriendlyNames(CCommArray& portList)
 {
     portList.RemoveAll();
 
@@ -5440,6 +5678,15 @@ void EnumSerialPortFriendlyNames(CCommArray& portList)
     }
 
     SetupDiDestroyDeviceInfoList(hDevInfo);
+
+	for(int i = 0 ; i < this->m_CommNameArray.GetSize(); i++)
+	{
+		CString s;
+		s = m_CommNameArray.GetAt(i).m_FileName;
+		s += _T(" : ");
+		s += m_CommNameArray.GetAt(i).m_FriendName;
+		this->m_ListCtrl.InsertString(0,s);
+	}
 }
 HBRUSH CHotLong_PCBDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
@@ -6065,4 +6312,576 @@ void CHotLong_PCBDlg::WriteMES(int ID, bool Pass)
 			f.Close();
 		}
 	}
+}
+void CHotLong_PCBDlg::OnBnClickedButtonPhoto()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	InitVideo();
+
+	
+	
+}
+
+
+
+afx_msg LRESULT CHotLong_PCBDlg::OnDeviceChange(WPARAM wParam, LPARAM lParam)
+{
+
+    // lParam 携带设备详细信息
+    PDEV_BROADCAST_HDR pBroadcastHdr = (PDEV_BROADCAST_HDR)lParam;
+    if (pBroadcastHdr == NULL)
+        return 0;
+
+    // 判断事件类型
+    switch (wParam)
+    {
+    case DBT_DEVICEARRIVAL:  // 设备插入
+    {
+		
+		
+        if (pBroadcastHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+        {
+            PDEV_BROADCAST_DEVICEINTERFACE pDevIf = (PDEV_BROADCAST_DEVICEINTERFACE)pBroadcastHdr;
+
+			CString szDevPath = pDevIf->dbcc_name;
+
+			this->m_ListCtrl.InsertString(0,szDevPath);
+            // 1. 判断是串口COM设备
+            if (IsEqualGUID(pDevIf->dbcc_classguid, GUID_COMPORT))
+            {
+                this->m_ListCtrl.InsertString(0,_T("【串口设备插入】"));
+				this->m_ListCtrl.InsertString(0,szDevPath);
+                // 在这里：重新枚举COM端口、重连串口
+				this->OpenAllComm();
+            }
+
+			if (IsEqualGUID(pDevIf->dbcc_classguid, GUID_CAMERA))
+            {
+                this->m_ListCtrl.InsertString(0,_T("【摄像头插入】"));
+				this->m_ListCtrl.InsertString(0,szDevPath);
+                
+				InitVideo();
+				
+            }
+
+			if (IsEqualGUID(pDevIf->dbcc_classguid, GUID_CAMERA_2))
+            {
+                this->m_ListCtrl.InsertString(0,_T("【摄像头插入】"));
+				this->m_ListCtrl.InsertString(0,szDevPath);
+                
+				InitVideo();
+				
+            }
+
+            
+        }
+        break;
+    }
+
+    case DBT_DEVICEREMOVECOMPLETE:  // 设备拔出
+    {
+		
+		
+        if (pBroadcastHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+        {
+            PDEV_BROADCAST_DEVICEINTERFACE pDevIf = (PDEV_BROADCAST_DEVICEINTERFACE)pBroadcastHdr;
+			CString szDevPath = pDevIf->dbcc_name;
+            this->m_ListCtrl.InsertString(0,szDevPath);
+            if (IsEqualGUID(pDevIf->dbcc_classguid, GUID_COMPORT))
+            {
+                this->m_ListCtrl.InsertString(0,_T("【串口拔出】，关闭串口"));
+				this->m_ListCtrl.InsertString(0,szDevPath);
+                //CloseSerialPort();
+            }
+
+            
+            if (IsEqualGUID(pDevIf->dbcc_classguid, GUID_CAMERA))
+            {
+                this->m_ListCtrl.InsertString(0,_T("【摄像头拔出】"));
+				this->m_ListCtrl.InsertString(0,szDevPath);
+				
+            }
+			if (IsEqualGUID(pDevIf->dbcc_classguid, GUID_CAMERA_2))
+            {
+                this->m_ListCtrl.InsertString(0,_T("【摄像头拔出】"));
+				this->m_ListCtrl.InsertString(0,szDevPath);
+				
+            }
+        }
+        break;
+    }
+    }
+
+    return 0;
+}
+
+// 注册设备通知
+void CHotLong_PCBDlg::RegisterUsbComNotify()
+{
+    if (m_hDevNotify_Comm != NULL)
+        return;
+
+    DEV_BROADCAST_DEVICEINTERFACE filter = { 0 };
+    filter.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
+    filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+
+     filter.dbcc_classguid = GUID_COMPORT;
+
+    // 注册到当前窗口
+    m_hDevNotify_Comm = RegisterDeviceNotification(
+        this->m_hWnd,
+        &filter,
+        DEVICE_NOTIFY_WINDOW_HANDLE
+    );
+
+    if (m_hDevNotify_Comm == NULL)
+    {
+        AfxMessageBox(_T("设备通知注册失败！"));
+    }
+}
+
+void CHotLong_PCBDlg::RegisterUsbCameraNotify()
+{
+
+    if (m_hDevNotify_Camera != NULL)
+        return;
+
+    DEV_BROADCAST_DEVICEINTERFACE filter = { 0 };
+    filter.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
+    filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+
+     filter.dbcc_classguid = GUID_CAMERA;
+
+    // 注册到当前窗口
+    m_hDevNotify_Camera = RegisterDeviceNotification(
+        this->m_hWnd,
+        &filter,
+        DEVICE_NOTIFY_WINDOW_HANDLE
+    );
+
+    if (m_hDevNotify_Camera == NULL)
+    {
+        AfxMessageBox(_T("设备通知注册失败！"));
+    }
+}
+
+void CHotLong_PCBDlg::RegisterUsbCameraNotify_2()
+{
+    if (m_hDevNotify_Camera_2 != NULL)
+        return;
+
+    DEV_BROADCAST_DEVICEINTERFACE filter = { 0 };
+    filter.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
+    filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+
+     filter.dbcc_classguid = GUID_NULL;
+
+    // 注册到当前窗口
+    m_hDevNotify_Camera_2 = RegisterDeviceNotification(
+        this->m_hWnd,
+        &filter,
+        DEVICE_NOTIFY_WINDOW_HANDLE
+    );
+
+    if (m_hDevNotify_Camera_2 == NULL)
+    {
+        AfxMessageBox(_T("设备通知注册失败！"));
+    }
+}
+
+void CHotLong_PCBDlg::CloseAllComm()
+{
+}
+
+void CHotLong_PCBDlg::OpenAllComm()
+{
+	m_CommNameArray.RemoveAll();
+    EnumSerialPortFriendlyNames(m_CommNameArray);
+
+
+	CString CommStr;
+
+	if(!this->m_Device_HuiKong_DIO.IsOpened())
+	{
+		m_Device_HuiKong_DIO.m_CommPara.comm		=&m_Device_HuiKong_DIO;
+		m_Device_HuiKong_DIO.m_CommPara.MessageID	= Comm_Device_HuiKong_DIO_MSG_ID;
+		m_Device_HuiKong_DIO.m_CommPara.m_hWnd		= this->GetSafeHwnd();
+		m_Device_HuiKong_DIO.m_bXModem				= false;
+
+		CommStr = _T("COM1");
+		if(m_Device_HuiKong_DIO.OpenComm(CommStr, &m_Device_HuiKong_DIO.m_CommPara) == 0)
+		{
+			m_Device_HuiKong_DIO.m_CommPara.ReadThread = AfxBeginThread(ReadCommThreadProc_PLC, (LPVOID)(&m_Device_HuiKong_DIO.m_CommPara), THREAD_PRIORITY_NORMAL);
+			this->m_ListCtrl.InsertString(0,_T("PLC COMM openned!"));
+			CString s;
+			s.Format(_T("%d"),m_Device_HuiKong_DIO.m_hComm);
+			this->m_ListCtrl.InsertString(0,s);
+		}
+	}
+
+	for (int i = 0; i < 9; i++)
+	{
+		CommStr = _T("");
+		
+		m_Device_HotLong_PCB[i].m_CommPara.comm			= m_Device_HotLong_PCB[i].m_Comm;
+		m_Device_HotLong_PCB[i].m_CommPara.MessageID	= Comm_PROGRAM_MSG_ID + i;
+		m_Device_HotLong_PCB[i].m_CommPara.m_hWnd		= this->GetSafeHwnd();
+		m_Device_HotLong_PCB[i].m_bXModem				= false;
+		
+		CString NameList[9] = 
+		{
+			_T("(COM2)"),
+			_T("Ch A"),
+			_T("Ch B"),
+			_T("Ch C"),
+			_T("Ch D"),
+			_T("Ch E"),
+			_T("Ch F"),
+			_T("Ch G"),
+			_T("Ch H"),
+		};
+		
+		if(m_CommNameArray.GetSize() > 0)
+		{
+			for(int x = 0; x < m_CommNameArray.GetSize(); x++)
+			{
+				CString s1 = m_CommNameArray.GetAt(x).m_FriendName;
+				if(s1.Find(NameList[i]) > 0)
+				{
+					CommStr = m_CommNameArray.GetAt(x).m_FileName;
+					break;
+				}
+			}
+			
+			
+			
+			if(CommStr.GetLength() == 0)
+			{
+				CString ss;
+				ss.Format(_T("没有对应的 %s 口"), NameList[i]);
+				this->m_ListCtrl.InsertString(0,ss);
+			}
+			else
+			{
+				if(!m_Device_HotLong_PCB[i].IsOpened())
+				{
+					if(m_Device_HotLong_PCB[i].OpenComm(CommStr, &m_Device_HotLong_PCB[i].m_CommPara) == 0)
+					{
+						m_Device_HotLong_PCB[i].m_CommPara.ReadThread = AfxBeginThread(ReadCommThreadProc_PCB, (LPVOID)(&m_Device_HotLong_PCB[i].m_CommPara), THREAD_PRIORITY_NORMAL);
+					}
+				}
+			}
+			
+		}
+		else
+		{
+			CString ss;
+			ss.Format(_T("没有对应的 COMM %d口"), i+1);
+			this->m_ListCtrl.InsertString(0,ss);
+		}
+	
+		
+	}
+
+}
+// rectCap：要截取的区域（窗口客户区坐标）
+// strSavePath：保存完整路径，支持 .bmp/.jpg/.png
+BOOL CHotLong_PCBDlg::CaptureLocalScreen(CRect rectCap, CString strSavePath)
+{
+    if (rectCap.IsRectEmpty())
+        return FALSE;
+
+    int nW = rectCap.Width();
+    int nH = rectCap.Height();
+
+    // 1. 获取窗口DC
+    CDC* pWndDC = GetDC();
+    CDC memDC;
+    CBitmap bmpMem;
+
+    // 创建兼容内存DC与位图
+    memDC.CreateCompatibleDC(pWndDC);
+    bmpMem.CreateCompatibleBitmap(pWndDC, nW, nH);
+    CBitmap* pOldBmp = memDC.SelectObject(&bmpMem);
+
+    // 2. 把窗口指定区域拷贝到内存位图
+    memDC.BitBlt(0, 0, nW, nH, pWndDC, rectCap.left, rectCap.top, SRCCOPY);
+
+    // 3. 用CImage保存图片
+    CImage imgSave;
+    imgSave.Attach(bmpMem);
+
+    HRESULT hr = imgSave.Save(strSavePath);
+
+    // 资源复原与释放
+    memDC.SelectObject(pOldBmp);
+    ReleaseDC(pWndDC);
+    imgSave.Detach(); // 解除绑定，防止析构销毁位图
+    bmpMem.DeleteObject();
+    memDC.DeleteDC();
+
+    return SUCCEEDED(hr);
+}
+
+void CHotLong_PCBDlg::WriteProfileInt(int ID,int val)
+{
+	bool b;
+	switch(ID)
+	{
+	case IDC_EDIT_LED_NUM_LEFT_1:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_LEFT_1"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_RIGHT_1:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_RIGHT_1"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_TOP_1:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_TOP_1"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_BOTTOM_1:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_BOTTOM_1"),val);
+		break;
+	
+	case IDC_EDIT_LED_NUM_LEFT_2:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_LEFT_2"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_RIGHT_2:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_RIGHT_2"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_TOP_2:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_TOP_2"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_BOTTOM_2:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_BOTTOM_2"),val);
+		break;
+
+	case IDC_EDIT_LED_NUM_LEFT_3:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_LEFT_3"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_RIGHT_3:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_RIGHT_3"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_TOP_3:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_TOP_3"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_BOTTOM_3:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_BOTTOM_3"),val);
+		break;
+
+	case IDC_EDIT_LED_NUM_LEFT_4:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_LEFT_4"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_RIGHT_4:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_RIGHT_4"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_TOP_4:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_TOP_4"),val);
+		break;
+	case  IDC_EDIT_LED_NUM_BOTTOM_4:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_NUM_BOTTOM_4"),val);
+		break;
+
+	case  IDC_EDIT_LED_HEAT_LEFT:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_HEAT_LEFT"),val);
+		break;
+	case  IDC_EDIT_LED_HEAT_RIGHT:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_HEAT_RIGHT"),val);
+		break;
+	case  IDC_EDIT_LED_HEAT_TOP:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_HEAT_TOP"),val);
+		break;
+	case  IDC_EDIT_LED_HEAT_BOTTOM:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_HEAT_BOTTOM"),val);
+		break;
+
+	case  IDC_EDIT_LED_COOL_LEFT:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_COOL_LEFT"),val);
+		break;
+	case  IDC_EDIT_LED_COOL_RIGHT:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_COOL_RIGHT"),val);
+		break;;
+	case  IDC_EDIT_LED_COOL_TOP:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_COOL_TOP"),val);
+		break;
+	case  IDC_EDIT_LED_COOL_BOTTOM:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_COOL_BOTTOM"),val);
+		break;
+
+	case  IDC_EDIT_LED_COLOR_LEFT:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_COLOR_LEFT"),val);
+		break;
+	case  IDC_EDIT_LED_COLOR_RIGHT:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_COLOR_RIGHT"),val);
+		break;
+	case  IDC_EDIT_LED_COLOR_TOP:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_COLOR_TOP"),val);
+		break;
+	case  IDC_EDIT_LED_COLOR_BOTTOM:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_EDIT_LED_COLOR_BOTTOM"),val);
+		break;
+
+	case  IDC_COMBO_PLC_Y_AGING_1:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_1"),val);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_2:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_2"),val);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_3:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_3"),val);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_4:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_4"),val);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_5:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_5"),val);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_6:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_6"),val);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_7:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_7"),val);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_8:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_8"),val);
+		break;
+
+	case  IDC_COMBO_PLC_Y_MINUS_KEY:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_MINUS_KEY"),val);
+		break;
+	case  IDC_COMBO_PLC_Y_PLUS_KEY:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_PLUS_KEY"),val);
+		break;
+	case  IDC_COMBO_PLC_Y_SET_KEY:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_SET_KEY"),val);
+		break;
+	case  IDC_COMBO_PLC_Y_TEST_NEEDLE:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_TEST_NEEDLE"),val);
+		break;
+	case  IDC_COMBO_PLC_Y_TEST_START:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PLC_Y_TEST_START"),val);
+		break;
+	case  IDC_COMBO_PCB_TYPE:
+		AfxGetApp()->WriteProfileInt(_T("HotLong"),_T("IDC_COMBO_PCB_TYPE"),val);
+		break;
+
+
+	}
+
+}
+int  CHotLong_PCBDlg::GetProfileInt(int ID)
+{
+	switch(ID)
+	{
+	case IDC_EDIT_LED_NUM_LEFT_1:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_LEFT_1"),0);
+	case  IDC_EDIT_LED_NUM_RIGHT_1:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_RIGHT_1"),0);
+	case  IDC_EDIT_LED_NUM_TOP_1:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_TOP_1"),0);
+	case  IDC_EDIT_LED_NUM_BOTTOM_1:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_BOTTOM_1"),0);
+	
+	case IDC_EDIT_LED_NUM_LEFT_2:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_LEFT_2"),0);
+	case  IDC_EDIT_LED_NUM_RIGHT_2:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_RIGHT_2"),0);
+	case  IDC_EDIT_LED_NUM_TOP_2:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_TOP_2"),0);
+	case  IDC_EDIT_LED_NUM_BOTTOM_2:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_BOTTOM_2"),0);
+
+	case IDC_EDIT_LED_NUM_LEFT_3:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_LEFT_3"),0);
+	case  IDC_EDIT_LED_NUM_RIGHT_3:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_RIGHT_3"),0);
+	case  IDC_EDIT_LED_NUM_TOP_3:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_TOP_3"),0);
+	case  IDC_EDIT_LED_NUM_BOTTOM_3:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_BOTTOM_3"),0);
+
+	case IDC_EDIT_LED_NUM_LEFT_4:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_LEFT_4"),0);
+	case  IDC_EDIT_LED_NUM_RIGHT_4:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_RIGHT_4"),0);
+	case  IDC_EDIT_LED_NUM_TOP_4:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_TOP_4"),0);
+	case  IDC_EDIT_LED_NUM_BOTTOM_4:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_NUM_BOTTOM_4"),0);
+
+
+
+
+	case  IDC_EDIT_LED_HEAT_LEFT:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_HEAT_LEFT"),0);
+	case  IDC_EDIT_LED_HEAT_RIGHT:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_HEAT_RIGHT"),0);
+	case  IDC_EDIT_LED_HEAT_TOP:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_HEAT_TOP"),0);
+	case  IDC_EDIT_LED_HEAT_BOTTOM:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_HEAT_BOTTOM"),0);
+
+	case  IDC_EDIT_LED_COOL_LEFT:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_COOL_LEFT"),0);
+	case  IDC_EDIT_LED_COOL_RIGHT:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_COOL_RIGHT"),0);
+	case  IDC_EDIT_LED_COOL_TOP:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_COOL_TOP"),0);
+	case  IDC_EDIT_LED_COOL_BOTTOM:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_COOL_BOTTOM"),0);
+
+	case  IDC_EDIT_LED_COLOR_LEFT:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_COLOR_LEFT"),0);
+	case  IDC_EDIT_LED_COLOR_RIGHT:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_COLOR_RIGHT"),0);
+	case  IDC_EDIT_LED_COLOR_TOP:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_COLOR_TOP"),0);
+	case  IDC_EDIT_LED_COLOR_BOTTOM:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_EDIT_LED_COLOR_BOTTOM"),0);
+
+	case  IDC_COMBO_PLC_Y_AGING_1:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_1"),0);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_2:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_2"),0);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_3:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_3"),0);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_4:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_4"),0);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_5:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_5"),0);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_6:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_6"),0);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_7:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_7"),0);
+		break;
+	case  IDC_COMBO_PLC_Y_AGING_8:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_AGING_8"),0);
+		break;
+
+	case  IDC_COMBO_PLC_Y_MINUS_KEY:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_MINUS_KEY"),0);
+		break;
+	case  IDC_COMBO_PLC_Y_PLUS_KEY:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_PLUS_KEY"),0);
+		break;
+	case  IDC_COMBO_PLC_Y_SET_KEY:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_SET_KEY"),0);
+		break;
+	case  IDC_COMBO_PLC_Y_TEST_NEEDLE:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_TEST_NEEDLE"),0);
+		break;
+	case  IDC_COMBO_PLC_Y_TEST_START:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PLC_Y_TEST_START"),0);
+		break;
+	case  IDC_COMBO_PCB_TYPE:
+		return AfxGetApp()->GetProfileIntW(_T("HotLong"),_T("IDC_COMBO_PCB_TYPE"),0);
+		break;
+
+	}
+
+	return 0;
 }

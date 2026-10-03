@@ -17,7 +17,7 @@
 #include "ProgramDlg.h"
 
 #include "afxinet.h"
-#include "son.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -485,11 +485,7 @@ void CDebugDlg::OnButton6()
 void CDebugDlg::OnButtonSetPID() 
 {
 	// TODO: Add your control notification handler code here
-    Son son;
-	
-	//son.say();
-
-	son.mydo();
+   
 
 	char para[100];
 	memset(para,0,sizeof(para));

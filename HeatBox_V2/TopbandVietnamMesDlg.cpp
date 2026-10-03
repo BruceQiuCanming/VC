@@ -60,6 +60,7 @@ BEGIN_MESSAGE_MAP(CTopbandVietnamMesDlg, CDialog)
 	ON_EN_SETFOCUS(IDC_EDIT_userid, &CTopbandVietnamMesDlg::OnEnSetfocusEdituserid)
 	ON_EN_SETFOCUS(IDC_EDIT_password, &CTopbandVietnamMesDlg::OnEnSetfocusEditpassword)
 	ON_BN_CLICKED(IDC_BUTTON_UPLOAD, &CTopbandVietnamMesDlg::OnBnClickedButtonUpload)
+	ON_BN_CLICKED(IDCANCEL, &CTopbandVietnamMesDlg::OnBnClickedCancel)
 END_MESSAGE_MAP()
 
 
@@ -114,6 +115,44 @@ void CTopbandVietnamMesDlg::MES_Check(void)
 
 
 		AfxMessageBox(postData);
+		/*
+		"parametricCustomList": [
+        {
+            "field_description":"450012491_B0180_10_RE_ICTV02",
+            "field_name":"450012491_B0180_10_RE_ICTV02",
+            "field_value": "PASS"
+        }
+    ],
+      "parametricMeasureInfoList": [
+        {
+            "measure_name":"1",
+            "measure_status": "PASS",
+            "unit_of_meas": "C",
+            "description":"温度1",
+            "high_limit": "100",
+            "low_limit":"60",
+            "actual":"80"
+        },
+        {
+            "measure_name":"2",
+            "measure_status": "PASS",
+            "unit_of_meas": "C",
+            "description":"温度1",
+            "high_limit": "100",
+            "low_limit":"60",
+            "actual":"80.7"
+        },
+        {
+            "measure_name":"3",
+            "measure_status": "PASS",
+            "unit_of_meas": "C",
+            "description":"温度1",
+            "high_limit": "100",
+            "low_limit":"60",
+            "actual":"80.9"
+        }
+    ]
+	*/
 
 		char buf[10000];
 		memset(buf,0,sizeof(buf));
@@ -340,13 +379,23 @@ void CTopbandVietnamMesDlg::OnEnSetfocusEditpassword()
 void CTopbandVietnamMesDlg::OnBnClickedButtonUpload()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	MES_Collection_TEST();
+	RECORD	record;
+	MES_Collection_TEST(record);
 
 }
 
-void CTopbandVietnamMesDlg::MES_Collection_TEST(void)
+void CTopbandVietnamMesDlg::MES_Collection_TEST(RECORD	record)
 {
 	const CString strAgent;
+
+	
+
+	memset(&record,0,sizeof(record));
+
+	for(int i = 0; i < 10; i++)
+	{
+		record.TestResult[0].IsUsed = true;
+	}
 
 	CString   response = L"";
 	CString strMethod = L"POST";
@@ -391,23 +440,68 @@ void CTopbandVietnamMesDlg::MES_Collection_TEST(void)
 		s.Format(_T("    \"sfc\": \"%s\",\r\n"),CString(::G_Topband_Vietnam_Config.sfcs));
 		postData += s;
 
+		/*
+				"parametricCustomList": [
+        {
+            "field_description":"450012491_B0180_10_RE_ICTV02",
+            "field_name":"450012491_B0180_10_RE_ICTV02",
+            "field_value": "PASS"
+        }
+    ],
+		*/
 		s.Format(_T("	\"parametricCustomList\": [\r\n"));
 		postData += s;
-		
-		
+		s.Format(_T("	{\r\n"));
+		postData += s;
+		s.Format(_T("	\"field_description\":\"450012491_B0180_10_RE_ICTV02\", \r\n"));
+		postData += s;
+		s.Format(_T("	\"field_name\":\"450012491_B0180_10_RE_ICTV02\",\r\n"));
+		postData += s;
+		s.Format(_T("	\"field_value\": \"PASS\"\r\n"));
+		postData += s;
+		s.Format(_T("	}\r\n"));
+		postData += s;
+		s.Format(_T("	],\r\n"));
+		postData += s;
 
 
 				postData += _T("{\r\n");
-				s.Format(_T("\"Nr\": \"%d\",\r\n"), 1);
-				postData += s;
 				
-				postData += _T("    \"ACT. TEMP\":\"100.0\",\r\n");
-			
-			
-				postData += _T("    \"RET. TEMP\":\"60.0\",\r\n");
-			
-				postData += _T("    \"Test Result\":\"OK\"\r\n");
-			
+
+				for(int i = 0; i < 128; i++)
+				{
+		/*			
+      "parametricMeasureInfoList": [
+        {
+            "measure_name":"1",
+            "measure_status": "PASS",
+            "unit_of_meas": "C",
+            "description":"温度1",
+            "high_limit": "100",
+            "low_limit":"60",
+            "actual":"80"
+        },
+        {
+            "measure_name":"2",
+            "measure_status": "PASS",
+            "unit_of_meas": "C",
+            "description":"温度1",
+            "high_limit": "100",
+            "low_limit":"60",
+            "actual":"80.7"
+        },
+        {
+            "measure_name":"3",
+            "measure_status": "PASS",
+            "unit_of_meas": "C",
+            "description":"温度1",
+            "high_limit": "100",
+            "low_limit":"60",
+            "actual":"80.9"
+        }
+    ]
+	*/
+				}
 			
 				postData += _T("}\r\n");
 				
@@ -439,8 +533,11 @@ void CTopbandVietnamMesDlg::MES_Collection_TEST(void)
 
 }
 
-void CTopbandVietnamMesDlg::MES_Collection(int BoxNr,RECORD *record,int start_Nr,int end_Nr)
+char temp_buf[1000000];
+void CTopbandVietnamMesDlg::MES_Collection(int BoxNr,RECORD *record,int start_Nr,int end_Nr,CString barcode)
 {
+
+
 	const CString strAgent;
 
 	CString   response = L"";
@@ -483,6 +580,18 @@ void CTopbandVietnamMesDlg::MES_Collection(int BoxNr,RECORD *record,int start_Nr
 		s.Format(_T("	\"resrce\": \"%s\",\r\n"),CString(::G_Topband_Vietnam_Config.resrce));
 		postData += s;
 
+		s.Format(_T("   \"program_id\": \"YBV0001\",\r\n"));
+		postData += s;
+		
+		s.Format(_T("   \"program_rev\":\"Changzhou Runbang Test Program Version V0001\",\r\n"));
+		postData += s;
+	
+		s.Format(_T("   \"tester_hw_rev\":\"Changzhou Runbang PC-128 \",\r\n"));
+		postData += s;
+
+		
+		s.Format(_T("   \"passStation\":\"N\",\r\n"));
+		postData += s;
 
 		s.Format(_T("	\"password\": \"%s\",\r\n"),CString(::G_Topband_Vietnam_Config.password));
 		postData += s;
@@ -492,21 +601,80 @@ void CTopbandVietnamMesDlg::MES_Collection(int BoxNr,RECORD *record,int start_Nr
 			postData += s;
 		}
 
-		if(CString(::G_Topband_Vietnam_Config.barcode).GetLength() > 0)
+		if(barcode.GetLength() > 0)
 		{
-			s.Format(_T("	\"barcode\": \"%s\",\r\n"),CString(::G_Topband_Vietnam_Config.barcode));
+			s.Format(_T("	\"barcode\": \"%s\",\r\n"),barcode);
 			postData += s;
 		}
 
 		s.Format(_T("    \"sfc\": \"%s\",\r\n"),CString(::G_Topband_Vietnam_Config.sfcs));
 		postData += s;
 
+		
+		/*
+				"parametricCustomList": [
+        {
+            "field_description":"450012491_B0180_10_RE_ICTV02",
+            "field_name":"450012491_B0180_10_RE_ICTV02",
+            "field_value": "PASS"
+        }
+    ],
+		*/
 		s.Format(_T("	\"parametricCustomList\": [\r\n"));
 		postData += s;
-		
-		
-		
+		s.Format(_T("	{\r\n"));
+		postData += s;
+		s.Format(_T("	\"field_description\":\"450012491_B0180_10_RE_ICTV02\", \r\n"));
+		postData += s;
+		s.Format(_T("	\"field_name\":\"450012491_B0180_10_RE_ICTV02\",\r\n"));
+		postData += s;
+		s.Format(_T("	\"field_value\": \"PASS\"\r\n"));
+		postData += s;
+		s.Format(_T("	}\r\n"));
+		postData += s;
+		s.Format(_T("	],\r\n"));
+		postData += s;
+	
+		//AfxMessageBox(postData);
 
+		//return;
+
+		/*			
+      "parametricMeasureInfoList": [
+        {
+            "measure_name":"1",
+            "measure_status": "PASS",
+            "unit_of_meas": "C",
+            "description":"温度1",
+            "high_limit": "100",
+            "low_limit":"60",
+            "actual":"80"
+        },
+        {
+            "measure_name":"2",
+            "measure_status": "PASS",
+            "unit_of_meas": "C",
+            "description":"温度1",
+            "high_limit": "100",
+            "low_limit":"60",
+            "actual":"80.7"
+        },
+        {
+            "measure_name":"3",
+            "measure_status": "PASS",
+            "unit_of_meas": "C",
+            "description":"温度1",
+            "high_limit": "100",
+            "low_limit":"60",
+            "actual":"80.9"
+        }
+    ]
+	*/
+
+	
+		s.Format(_T("	\"parametricMeasureInfoList\": [\r\n"));
+		postData += s;
+		
 		for(int i = start_Nr; i < end_Nr; i++)
 		{
 			if(record->TestResult[i].IsUsed)
@@ -514,42 +682,92 @@ void CTopbandVietnamMesDlg::MES_Collection(int BoxNr,RECORD *record,int start_Nr
 				used_counts --;
 
 				postData += _T("{\r\n");
-				s.Format(_T("\"Nr\": \"%d\",\r\n"), i+1);
+				s.Format(_T("\"measure_name\":\"%d-1\",\r\n"), i+1);
 				postData += s;
+				
+				CONTROL_TEMP_RANGE temp_range;
+
+				HEAT_COOL_ORDER HeatOrCool = ::CheckHeatOrCoolMode(BoxNr,record->ConfigPara,&temp_range,record->BoxType); 
+
+				TEST_RESULT_LEVEL level = CheckTestLevel(record->ConfigPara,record->TestResult[i] ,HeatOrCool,temp_range,record->TestResult[i],record->BoxType);
+
+				if(level == MAIN_LEVEL
+					|| level == TEST_RESULT_HIGH_LEVEL	
+					|| level == LOW_LEVEL)
+				{
+					s.Format(_T("\"measure_status\": \"PASS\",\r\n"));
+				}
+				else
+				{
+					s.Format(_T("\"measure_status\": \"FAIL\",\r\n"));
+				}
+				postData += s;
+				
+				s.Format(_T("\"unit_of_meas\": \"C\",\r\n"));
+				postData += s;
+				
+				s.Format(_T("\"description\":\"Act.Temp%d-1\",\r\n"),i+1);
+				postData += s;
+
+				
+				s.Format(_T("\"high_limit\": \"%.1f\",\r\n"),temp_range.open_temp_max);
+				postData += s;
+
+				s.Format(_T("\"low_limit\": \"%.1f\",\r\n"),temp_range.open_temp_min);
+				postData += s;
+
 				if(record->TestResult[i].IsOpenned)
 				{
-					s.Format(_T("    \"ACT. TEMP\":\"%5.1f\",\r\n"),record->TestResult[i].OpenTemp);
+					s.Format(_T("    \"actual\":\"%5.1f\"\r\n"),record->TestResult[i].OpenTemp);
 					postData += s;
 				}
 				else
 				{
-					postData += _T("    \"ACT. TEMP\":\"-.-\",\r\n");
+					postData += _T("    \"actual\":\"999.9\"\r\n");
+				}
+				postData += _T("},\r\n");
+
+				//复位温度
+				postData += _T("{\r\n");
+				s.Format(_T("\"measure_name\":\"%d-2\",\r\n"), i+1);
+				postData += s;
+				
+				
+				if(level == MAIN_LEVEL
+					|| level == TEST_RESULT_HIGH_LEVEL	
+					|| level == LOW_LEVEL)
+				{
+					s.Format(_T("\"measure_status\": \"PASS\",\r\n"));
+				}
+				else
+				{
+					s.Format(_T("\"measure_status\": \"FAIL\",\r\n"));
+				}
+				postData += s;
+				
+				s.Format(_T("\"unit_of_meas\": \"C\",\r\n"));
+				postData += s;
+				
+				s.Format(_T("\"description\":\"Ret.Temp%d-2\",\r\n"),i+1);
+				postData += s;
+
+				
+				s.Format(_T("\"high_limit\": \"%.1f\",\r\n"),temp_range.close_temp_max);
+				postData += s;
+
+				s.Format(_T("\"low_limit\": \"%.1f\",\r\n"),temp_range.close_temp_min);
+				postData += s;
+
+				if(record->TestResult[i].IsOpenned)
+				{
+					s.Format(_T("    \"actual\":\"%5.1f\"\r\n"),record->TestResult[i].CloseTemp);
+					postData += s;
+				}
+				else
+				{
+					postData += _T("    \"actual\":\"999.9\"\r\n");
 				}
 				
-				if(record->TestResult[i].IsClosed)
-				{
-					s.Format(_T("    \"RET. TEMP\":\"%5.1f\",\r\n"),record->TestResult[i].CloseTemp);
-					postData += s;
-				}
-				else
-				{
-					postData += _T("    \"RET. TEMP\":\"-.-\",\r\n");
-				}
-
-				CONTROL_TEMP_RANGE temp_range;
-				HEAT_COOL_ORDER HeatOrCool = CheckHeatOrCoolMode(BoxNr,record->ConfigPara ,&temp_range,record->BoxType);
-
-				TEST_RESULT_LEVEL result = CheckTestLevel(record->ConfigPara,record->TestResult[i],HeatOrCool,temp_range,record->TestResult[i],record->BoxType);
-				if(result == MAIN_LEVEL
-					|| result == TEST_RESULT_HIGH_LEVEL	
-					|| result == LOW_LEVEL)
-				{
-					postData += _T("    \"Test Result\":\"OK\"\r\n");
-				}
-				else
-				{
-					postData += _T("    \"Test Result\":\"NG\"\r\n");
-				}
 				if(used_counts == 0)
 				{
 					postData += _T("}\r\n");
@@ -566,21 +784,30 @@ void CTopbandVietnamMesDlg::MES_Collection(int BoxNr,RECORD *record,int start_Nr
 
 		postData += _T("}]\r\n");
 
+		TCHAR *buff = postData.GetBuffer();
+		WriteLogFile(buff,BoxNr);
+		postData.ReleaseBuffer();
 
+	//	AfxMessageBox(postData);
 
-//		AfxMessageBox(postData);
-
-		char buf[10000];
-		memset(buf,0,sizeof(buf));
+		
+		memset(temp_buf,0,sizeof(temp_buf));
 		for(int i = 0; i < postData.GetLength(); i++)
 		{
-			buf[i] = postData.GetAt(i);
+			temp_buf[i] = postData.GetAt(i);
 		}
-		int answer = HttpTools::HttpRequest(strMethod,strUrl,buf,response,IE_AGENT,true);
+
+	
+		int answer = HttpTools::HttpRequest(strMethod,strUrl,temp_buf,response,IE_AGENT,true);
+
+		response += _T("\r\n");
+		buff = response.GetBuffer();
+		WriteLogFile(buff,BoxNr);
+		postData.ReleaseBuffer();
 
 		if(response.FindOneOf(_T("success")) > 0 )
 		{
-	//		AfxMessageBox(_T("success"));
+			AfxMessageBox(response);
 		}
 		else
 		{
@@ -595,43 +822,8 @@ void CTopbandVietnamMesDlg::MES_Collection(int BoxNr,RECORD *record,int start_Nr
 }
 
 
-/*[{
-    "site": "1001",
-    "userid": "SITE_ADMIN",
-    "password": "MESXXXXX",
-    "operation": "DICT1",
-    "resrce": "D01ICT1",
-    "sfc": "EO023621902567",
-    "shop_order": "50560247",
-    "parametricMeasureInfoList": [
-        {
-           "low_limit": "0.950nF",
-            "actual": "0.9871830nF",
-            "parametricMeasureCustomList": [
-                {
-                    "property_name": "上限",
-                    "property_value": "20.0",
-                    "unit_of_meas": ""
-                },
-                {
-                    "property_name": "下限",
-                    "property_value": "20.0",
-                    "unit_of_meas": ""
-                },
-                {
-                    "property_name": "形态",
-                    "property_value": "C",
-                    "unit_of_meas": ""
-                },
-                {
-                    "property_name": "偏差",
-                    "property_value": "-1.3  %",
-                    "unit_of_meas": ""
-                }
-            ]
-        }
-        
-        
-    ]
-}]
-*/
+void CTopbandVietnamMesDlg::OnBnClickedCancel()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	OnCancel();
+}

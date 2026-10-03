@@ -314,3 +314,4 @@ BOOL CHotLong_PCBApp::PreTranslateMessage(MSG *pMsg)
 	}
 	return CWinApp::PreTranslateMessage(pMsg); 
 }
+

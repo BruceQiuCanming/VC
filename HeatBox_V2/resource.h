@@ -90,6 +90,8 @@
 #define IDR_BIMETAL24_V3_B              232
 #define IDD_DIALOG_DONGGUAN_BETTER_MES_MESSAGE 233
 #define IDD_TOPBAND_VIATNAM_MES_DLG     234
+#define IDR_HEX2                        235
+#define IDR_LLTB_2TEMP_24OUT            235
 #define IDC_TAB1                        1000
 #define IDC_TAB2                        1001
 #define IDC_TAB3                        1002
@@ -546,6 +548,7 @@
 #define IDC_CHECK_DEBUG_MODE            1256
 #define IDC_CHECK_FONT_DIRECTION        1256
 #define IDC_EDIT_PV_1                   1257
+#define IDC_STATIC_BARCODE              1257
 #define IDC_EDIT_SV_1                   1258
 #define IDC_STATIC_LOW_LEVEL_INPUT_CYCLINDER 1259
 #define IDC_EDIT_MSG_1                  1259
@@ -781,7 +784,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        235
+#define _APS_NEXT_RESOURCE_VALUE        236
 #define _APS_NEXT_COMMAND_VALUE         32774
 #define _APS_NEXT_CONTROL_VALUE         1279
 #define _APS_NEXT_SYMED_VALUE           101

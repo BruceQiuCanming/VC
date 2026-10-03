@@ -25,7 +25,6 @@ public :
 	int					m_Pp;
 	int					m_BoxNr;
 	CComm				*m_Comm;
-	COMM_THREAD_PARA	m_CommPara;
 	CString				m_BarCode;
 	int					m_Device_HuiKong_DIO_Y;
 	CTime				m_BoxBeginTime;

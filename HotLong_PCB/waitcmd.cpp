@@ -55,7 +55,7 @@ int CWaitCmd::SendWaitCmd(CComm *comm)
        MODBUS_RS485_CMD_ALL all = m_WaitCmdArray.GetAt(0);
        if( comm->WriteComm(&all.RS485_Addr,all.data_size) == -999)
        {
-           AfxMessageBox(_T("-999"));
+           return -999;
        }
        comm->m_LastSendCmd = all;
        

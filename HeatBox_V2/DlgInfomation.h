@@ -21,6 +21,7 @@ protected:
 public:
 	CString  m_Info;
 	CString  m_Memo;
+	CString  m_Barcode;
 	int		m_BoxNr;
 	afx_msg void OnBnClickedOk();
 	virtual BOOL OnInitDialog();

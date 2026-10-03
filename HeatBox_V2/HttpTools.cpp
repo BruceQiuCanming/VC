@@ -211,6 +211,8 @@ int HttpTools::HttpRequest(CString strMethod,
 
 }
 
+char szChars[1024000] = {0};
+TCHAR msg[1000000];
 int HttpTools::HttpRequest(CString strMethod, 
 	CString strUrl, 
 	char* postData, 
@@ -276,7 +278,8 @@ int HttpTools::HttpRequest(CString strMethod,
 		//·¢ËÍÇëÇó
         pHttpFile->SendRequest(NULL, 0, (LPVOID)postData, strlen(postData));
 		
-        char szChars[1024] = {0};
+        //char szChars[1024000] = {0};
+		memset(szChars,0,sizeof(szChars));
         
         UINT nReaded = 0;
 		memset(strRawResponse,0,sizeof(strRawResponse));
@@ -346,8 +349,8 @@ int HttpTools::HttpRequest(CString strMethod,
  
  
         DWORD dwErrorCode = e->m_dwError;
-		TCHAR msg[1000];
-		e->GetErrorMessage(msg,1000);
+		
+		e->GetErrorMessage(msg,sizeof(msg));
         e->Delete();
  
 		AfxMessageBox(msg);

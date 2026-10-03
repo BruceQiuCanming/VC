@@ -12,8 +12,6 @@
 
 //	ON_MESSAGE(COMM_MSG, OnComm)
 
-DELTA_PLC_SET_CMD	G_Delta_PLC_SetCmd;
-DELTA_PLC_READ_CMD	G_Delta_PLC_ReadCmd;
 
 
 extern CString theAppDirectory;
@@ -466,13 +464,13 @@ int CComm::SetBaudrate(HANDLE hComm,DWORD BaudRate,BYTE ByteSize,BYTE StopBits ,
 
     if(!SetCommState(hComm,&m_dcb))
 	{
-		AfxMessageBox(_T("串口异常！"),NULL,MB_ICONERROR);
+		//AfxMessageBox(_T("串口异常 D！"),NULL,MB_ICONERROR);
 		return -4;
 	}
 
 	if(!SetupComm(hComm,1024*30,1024))
 	{
-		AfxMessageBox(_T("串口异常！"),NULL,MB_ICONERROR);
+		//AfxMessageBox(_T("串口异常！E"),NULL,MB_ICONERROR);
 			return -2;
 	}
 	
@@ -542,7 +540,7 @@ int CComm::OpenComm(CString commName,COMM_THREAD_PARA *para)
 	
 	if(!GetCommState(m_hComm,&m_dcb))
 			{
-				AfxMessageBox(_T("串口异常！"),NULL,MB_ICONERROR);
+				//AfxMessageBox(_T("串口异常 C！"),NULL,MB_ICONERROR);
 				return -3;
 			}
 			else
@@ -559,12 +557,12 @@ int CComm::OpenComm(CString commName,COMM_THREAD_PARA *para)
 
     if(!SetCommState(m_hComm,&m_dcb))
 		{
-			AfxMessageBox(_T("串口异常！"),NULL,MB_ICONERROR);
+			//AfxMessageBox(_T("串口异常 D！"),NULL,MB_ICONERROR);
 			return -4;
 		}
 	if(!SetupComm(m_hComm,1024*30,1024))
 		{
-			AfxMessageBox(_T("串口异常！"),NULL,MB_ICONERROR);
+			//AfxMessageBox(_T("串口异常 E！"),NULL,MB_ICONERROR);
 				return -2;
 		}
 	
@@ -639,7 +637,7 @@ int CComm::OpenComm(CString commName,COMM_THREAD_PARA *para,DCB dcb)
 	
 		if(!GetCommState(m_hComm,&m_dcb))
 			{
-				AfxMessageBox(_T("串口异常！"),NULL,MB_ICONERROR);
+				//AfxMessageBox(_T("串口异常 A ！"),NULL,MB_ICONERROR);
 				return -3;
 			}
 			else
@@ -657,12 +655,12 @@ int CComm::OpenComm(CString commName,COMM_THREAD_PARA *para,DCB dcb)
 
 		if(!SetCommState(m_hComm,&m_dcb))
 		{
-			AfxMessageBox(_T("串口异常！"),NULL,MB_ICONERROR);
+			//AfxMessageBox(_T("串口异常 B！"),NULL,MB_ICONERROR);
 			return -4;
 		}
 		if(!SetupComm(m_hComm,1024*30,1024))
 		{
-			AfxMessageBox(_T("串口异常！"),NULL,MB_ICONERROR);
+			//AfxMessageBox(_T("串口异常 C！"),NULL,MB_ICONERROR);
 				return -2;
 		}
 	
@@ -687,10 +685,14 @@ int CComm::CloseComm(void)
 {
 	bReadComm = 0;
 	
-	Sleep(1000);
+	Sleep(100);
 	::CloseHandle(m_hComm); 
 	m_hComm = INVALID_HANDLE_VALUE;
 	
+	this->m_CommPara.m_hWnd =	NULL;
+	this->m_CommPara.comm	=	NULL;
+	this->m_CommPara.MessageID = 0;
+	this->m_CommPara.ReadThread = NULL;
 
 	return 0;
 }

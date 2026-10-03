@@ -45,6 +45,7 @@ public:
 	
 	CString		m_ParaName;
 	CString		m_TestMemo;
+	CString     m_Barcode;
 	CRect		m_LED_Rect[192];
 
 
@@ -133,63 +134,7 @@ public:
 
 	void CSwitchDlg::SaveCurve(void);
 
-#ifndef _WORK_MODE_H_
 
-	CString					m_Printer;
-
-	int		m_OpenDoor_SwitchClosed[3];
-	CTime	m_OpenDoor_SwitchClosed_StartTime[3];
-
-	float	m_OpenDoor_Temp;
-	CTime	m_OpenDoor_StartTime;
-	BOOL	m_OpenDoorIng;
-
-	CTime	m_EndTestTime;
-	CTime	m_BeginTestTime;
-
-	float	m_CloseDoorTopTemp;
-	float	m_CloseDoorStartTemp;
-	CTime	m_CloseDoorStartTime;
-		
-	double GetControlGoalTemp(SUB_MODE /*AUTO_TEST_STEP*/ step);
-	int		GetHighestCloseTemp();
-	double		GetLowestCloseTemp(void);
-
-	void PrintTestResult(void) ;
-	BOOL OpennedAndNotFlashTested();
-	void OpenDoor_For_OpenFlashTest(void);
-	void OpenDoor_For_CloseFlashTest(void);
-	float m_LastClosePIDTemp;
-	CTime m_ClosePIDStartTime;
-	CTime m_TopPIDStartTime;
-
-	bool	IsAllClosed(void);
-	bool	IsAllOpened(void);
-
-	CTime   m_CurSubModeBeginTime;
-
-	void	SendReadOpenFlash(void);
-	void	SendReadCloseFlash(void);
-	void	SendStartOpenFlashTest(void);
-	void	SendStartCloseFlashTest(void);
-
-
-	bool CSwitchDlg::IsPT100Caled(void);
-	void ExitAutoTest(void);
-	void EnterAutoTest(void);
-
-	bool m_StopTestType;
-
-	void AutoTestStep_DirectHeat(void);
-	void AuotTestStep_NormalPID(void);
-	void AutoTestStep_StepPID(void);
-	void AutoTestStep_TopPID(void);
-	void AuotTestStep_NormalPID_2(void);
-	void AutoTestStep_StepPID_2(void);
-	void AutoTestStep_DircetCool(void);
-	void AutoTestStep_HeatAgain(void);
-	void AutoTestStep_StepCool(void);
-#endif
 
 	
 	afx_msg void OnClose();

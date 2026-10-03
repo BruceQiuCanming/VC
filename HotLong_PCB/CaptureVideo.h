@@ -62,8 +62,11 @@ class CCaptureVideo : public CWnd
 	friend class CSampleGrabberCB;
 	public:
 	void GrabOneFrame(BOOL bGrab);
+	void ReleaseMem(void);
 	HRESULT Init(int iDeviceID,HWND hWnd);
 	int EnumDevices(CListBox* list,HWND hList);
+	int EnumDevices_Camera(CListBox* list,HWND hList);
+	CStringArray  m_CameraName;
 	static int EnumDevices(CStringArray * CameraName);
 	CCaptureVideo();
 	virtual ~CCaptureVideo();
@@ -83,5 +86,5 @@ protected:
 	HRESULT InitCaptureGraphBuilder();
 };
 
-extern int G_PIC_Width,G_PIC_Height;
+//extern int G_PIC_Width,G_PIC_Height;
 #endif // !defined(AFX_CAPTUREVIDEO_H__F5345AA4_A39F_4B07_B843_3D87C4287AA0__INCLUDED_)

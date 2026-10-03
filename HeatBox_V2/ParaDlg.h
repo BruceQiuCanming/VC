@@ -84,6 +84,7 @@ protected:
 	// Generated message map functions
 	//{{AFX_MSG(CParaDlg)
 	virtual BOOL OnInitDialog();
+	bool CParaDlg::InputPassword(void);
 	BOOL PreTranslateMessage(MSG *pMsg);
 	afx_msg void OnDblclkComboMainLevel();
 	afx_msg void OnChangeEditMainLevelSpan();

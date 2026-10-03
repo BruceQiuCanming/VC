@@ -48,7 +48,8 @@ public:
 	afx_msg void OnEnSetfocusEditpassword();
 	afx_msg void OnBnClickedButtonUpload();
 
-	static void MES_Collection(int BoxNr,RECORD *record,int start_Nr,int end_Nr);
-	void MES_Collection_TEST(void);
+	static void MES_Collection(int BoxNr,RECORD *record,int start_Nr,int end_Nr,CString barcode);
+	void MES_Collection_TEST(RECORD	record);
 	static void MES_Check(void);
+	afx_msg void OnBnClickedCancel();
 };

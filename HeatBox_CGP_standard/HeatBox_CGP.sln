@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HeatBox_CGP", "HeatBox_CGP\HeatBox_CGP.vcproj", "{92540658-FD74-4015-B06F-286ED0A2F5D5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug_VoltAmp|Win32 = Debug_VoltAmp|Win32
+		Debug|Win32 = Debug|Win32
+		Relase_VoltAmp|Win32 = Relase_VoltAmp|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{92540658-FD74-4015-B06F-286ED0A2F5D5}.Debug_VoltAmp|Win32.ActiveCfg = Debug_VoltAmp|Win32
+		{92540658-FD74-4015-B06F-286ED0A2F5D5}.Debug_VoltAmp|Win32.Build.0 = Debug_VoltAmp|Win32
+		{92540658-FD74-4015-B06F-286ED0A2F5D5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{92540658-FD74-4015-B06F-286ED0A2F5D5}.Debug|Win32.Build.0 = Debug|Win32
+		{92540658-FD74-4015-B06F-286ED0A2F5D5}.Relase_VoltAmp|Win32.ActiveCfg = Relase_VoltAmp|Win32
+		{92540658-FD74-4015-B06F-286ED0A2F5D5}.Relase_VoltAmp|Win32.Build.0 = Relase_VoltAmp|Win32
+		{92540658-FD74-4015-B06F-286ED0A2F5D5}.Release|Win32.ActiveCfg = Release|Win32
+		{92540658-FD74-4015-B06F-286ED0A2F5D5}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

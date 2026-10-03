@@ -119,6 +119,8 @@ public:
 
 	void SelectTab(int tabnr);
 	LRESULT OnComm(WPARAM wParam,LPARAM lParam);
+	LRESULT OnComm_1(WPARAM wParam,LPARAM lParam);
+	
 	int InitRecord(void);
 	LRESULT CHeatBoxDlg::OnRecord(WPARAM wParam,LPARAM lParam);
 	bool CheckSameTemp(int BoxNr);
@@ -227,6 +229,7 @@ public:
 	CComboBox m_ComboSpeech;
 
 	CString G_CommRec;
+	CString G_CommSend;
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnBnClickedCheck1();
 	afx_msg void OnBnClickedCheck_Barcode();

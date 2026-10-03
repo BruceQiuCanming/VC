@@ -143,7 +143,7 @@ BEGIN_MESSAGE_MAP(CParaDlg, CDialog)
 	ON_BN_CLICKED(IDC_CHECK_PROGRAM_MINUS, &CParaDlg::OnBnClickedCheckProgramMinus)
 END_MESSAGE_MAP()
 
-void EnumSerialPortFriendlyNames(CCommArray& portList);
+
 extern CONFIG_DATA	m_ConfigData;
 // CParaDlg 消息处理程序
 BOOL CParaDlg::OnInitDialog()
@@ -250,10 +250,8 @@ BOOL CParaDlg::OnInitDialog()
 
 		
 
-	CCommArray sa;
-
-	sa.RemoveAll();
-	EnumSerialPortFriendlyNames(sa);
+	//G_MainDlg->m_CommNameArray.RemoveAll();
+	//G_MainDlg->EnumSerialPortFriendlyNames(sa);
 
 
 	this->m_Combo_COMM_AGING_1.ResetContent();
@@ -267,25 +265,25 @@ BOOL CParaDlg::OnInitDialog()
 	this->m_Combo_PLC_COMM.ResetContent();
 	this->m_Combo_PROGRAM_COMM.ResetContent();
 
-	for(int i = 0; i < sa.GetSize(); i++)
+	for(int i = 0; i < G_MainDlg->m_CommNameArray.GetSize(); i++)
 	{
-		m_Combo_COMM_AGING_1.AddString(sa.GetAt(i).m_FriendName);
-		m_Combo_COMM_AGING_2.AddString(sa.GetAt(i).m_FriendName);
-		m_Combo_COMM_AGING_3.AddString(sa.GetAt(i).m_FriendName);
-		m_Combo_COMM_AGING_4.AddString(sa.GetAt(i).m_FriendName);
-		m_Combo_COMM_AGING_5.AddString(sa.GetAt(i).m_FriendName);
-		m_Combo_COMM_AGING_6.AddString(sa.GetAt(i).m_FriendName);
-		m_Combo_COMM_AGING_7.AddString(sa.GetAt(i).m_FriendName);
-		m_Combo_COMM_AGING_8.AddString(sa.GetAt(i).m_FriendName);
-		m_Combo_PLC_COMM.AddString(sa.GetAt(i).m_FriendName);
-		m_Combo_PROGRAM_COMM.AddString(sa.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_1.AddString(G_MainDlg->m_CommNameArray.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_2.AddString(G_MainDlg->m_CommNameArray.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_3.AddString(G_MainDlg->m_CommNameArray.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_4.AddString(G_MainDlg->m_CommNameArray.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_5.AddString(G_MainDlg->m_CommNameArray.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_6.AddString(G_MainDlg->m_CommNameArray.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_7.AddString(G_MainDlg->m_CommNameArray.GetAt(i).m_FriendName);
+		m_Combo_COMM_AGING_8.AddString(G_MainDlg->m_CommNameArray.GetAt(i).m_FriendName);
+		m_Combo_PLC_COMM.AddString(G_MainDlg->m_CommNameArray.GetAt(i).m_FriendName);
+		m_Combo_PROGRAM_COMM.AddString(G_MainDlg->m_CommNameArray.GetAt(i).m_FriendName);
 	}
 
 	CString s;
 
-	for(int i = 0; i < sa.GetSize(); i++)
+	for(int i = 0; i < G_MainDlg->m_CommNameArray.GetSize(); i++)
 	{
-		s = sa.GetAt(i).m_FriendName;
+		s = G_MainDlg->m_CommNameArray.GetAt(i).m_FriendName;
 		if(s.Find(_T("Ch A")) > 0)
 		{
 			m_Combo_COMM_AGING_1.SetCurSel(i);

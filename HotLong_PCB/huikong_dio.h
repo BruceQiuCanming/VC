@@ -26,7 +26,7 @@ class CDevice_HuiKong_DIO : public CComm, public CWaitCmd
 public:
     CDevice_HuiKong_DIO();
     ~CDevice_HuiKong_DIO();
-	COMM_THREAD_PARA		m_CommPara;
+	
     int						m_BoxNr;
     int                     m_Y[16];
     int                     m_X[16];

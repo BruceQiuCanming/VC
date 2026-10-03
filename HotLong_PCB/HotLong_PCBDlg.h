@@ -13,6 +13,7 @@
 #include "Device_HuiLong_PCB.h"
 #include "HuiKong_DIO.h"
 #include "ParaDlg.h"
+#include "dbt.h"
 
 #define CAMERA_WIDTH	(1920 / 3)
 #define CAMERA_HEIGHT	(1028 / 3)
@@ -92,6 +93,8 @@ typedef struct
 }COMM_FRIENDNAME_FILENAME;
 
 typedef CArray<COMM_FRIENDNAME_FILENAME,COMM_FRIENDNAME_FILENAME> CCommArray;
+
+
 
 typedef struct
 {
@@ -208,9 +211,28 @@ public:
 	CListBox			m_ListCtrl;
 	CCaptureVideo		m_cap;
 
-	afx_msg void OnBnClickedOk();
-	afx_msg void OnBnClickedButton1();
 
+	HDEVNOTIFY			m_hDevNotify_Comm;
+	HDEVNOTIFY			m_hDevNotify_Camera;
+	HDEVNOTIFY			m_hDevNotify_Camera_2;
+	afx_msg LRESULT OnDeviceChange(WPARAM wParam, LPARAM lParam);
+	void CHotLong_PCBDlg::RegisterUsbCameraNotify_2();
+
+	// 注册/注销设备通知
+	void RegisterUsbComNotify(void);
+	void RegisterUsbCameraNotify(void);
+	void UnRegisterUsbComNotify(void);
+	void UnRegisterUsbCameraNotify(void);
+
+	//CStringArray		m_CommStringArray;
+	void EnumSerialPortFriendlyNames(CCommArray& portList);
+	void CloseAllComm(void);
+	void OpenAllComm(void);
+
+	CCommArray			m_CommNameArray;
+
+	afx_msg void OnBnClickedOk();
+	
 	int							m_LED_NUM[4];
 
 	CDevice_HuiKong_DIO			m_Device_HuiKong_DIO;
@@ -265,8 +287,12 @@ public:
 	int     m_Aging_Fail_Counts;
 	int     m_Aging_Total_Counts;
 	float   m_Aging_Percent;
-
-	void StartVideo(void);
+	int     m_StartVideo_UsedTime;
+	int     m_StartVideo_UsedTime_Max;
+	int     m_StartVideo_UsedTime_Min;
+	int		m_UsedMemory_Max;
+	int		m_UsedMemory_Min;
+	bool    m_Doing;
 
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnBnClickedButtonLedRect();
@@ -314,6 +340,7 @@ public:
 	void Take_Screenshot_To_File(CImage* source_image, int Left, int Top, int Right, int Bottom, CString fileName);
 	void SaveOnlyRedColor(CImage* image, unsigned int ColorBits, unsigned int ColorMinVal);
 	CString  GetLedChar(int ID,CImage* image);
+	int		m_Hex[4];
 	bool center(CImage* image, CRect rect);
 	CRect Get_a1_Rect(CImage* image);
 	afx_msg void OnBnClickedCancel();
@@ -436,6 +463,8 @@ public:
 	CStatic m_PIC_LED_NUM_3;
 	CStatic m_PIC_LED_NUM_4;
 
+	void StartVideo( void);
+	void InitVideo(void);
 
 	bool cross(CImage image, int x1, int y1, int x2, int y2);
 	int getnum(CImage image);
@@ -479,8 +508,21 @@ public:
 	afx_msg void OnEnSetfocusEditLedColorTop();
 	afx_msg void OnEnSetfocusEditLedColorBottom();
 
+	afx_msg void OnBnClickedButtonPhoto();
+	BOOL CaptureLocalScreen(CRect rectCap, CString strSavePath);
+
+	static void WriteProfileInt(int ID,int val);
+	static int  GetProfileInt(int ID);
+
 };
 
+typedef struct
+{
+	CHotLong_PCBDlg *pWnd;
+}DealVide_THREAD_PARA;
+
+
+void StartVideo(CHotLong_PCBDlg * CWnd);
 
 extern 	void ReadConfig(void);
 	

@@ -592,7 +592,7 @@ private:
 	
 	
 public:
-	
+	COMM_THREAD_PARA		m_CommPara;
 	
 	int	 m_OpenCount;
 	bool bReadComm;

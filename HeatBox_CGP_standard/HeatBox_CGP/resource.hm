@@ -1,0 +1,4 @@
+// Microsoft Visual C++ generated Help ID include file.
+// Used by HeatBox_CGP.rc
+//
+#define HIDC_CHECK6                     0x8084046f    // IDD_DIALOG_OTHER_CONFIG

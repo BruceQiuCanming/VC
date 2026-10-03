@@ -5,7 +5,10 @@
 #include "HotLong_PCB.h"
 
 BOOL bOneShot=FALSE;//全局变量
-int G_PIC_Width,G_PIC_Height;
+
+ISampleGrabber * m_pGrabber ;
+
+//int G_PIC_Width,G_PIC_Height;
 class CSampleGrabberCB : public ISampleGrabberCB
 {
 	public:
@@ -112,6 +115,31 @@ CCaptureVideo::CCaptureVideo()
 	m_pCapture = NULL;
 	m_pBF  = NULL;
 }
+void CCaptureVideo::ReleaseMem(void)
+{
+	if(m_pMC)
+	{
+		m_pMC->Stop();
+	}
+	if(m_pVW)
+	{
+		m_pVW->put_Visible(OAFALSE);
+		m_pVW->put_Owner(NULL);
+		
+	}
+	SAFE_RELEASE(m_pCapture);
+
+	SAFE_RELEASE(m_pMC);
+	SAFE_RELEASE(m_pGB);
+	if(m_pBF > 0)
+	{
+		SAFE_RELEASE(m_pBF);
+	}
+	
+	SAFE_RELEASE(m_pGrabber);
+		
+	//CoUninitialize( );
+}
 CCaptureVideo::~CCaptureVideo()
 {
 	// Stop media playback
@@ -213,10 +241,12 @@ int CCaptureVideo::EnumDevices(CStringArray * CameraName)
 	return id;
 }
 
-ISampleGrabber * m_pGrabber ;
+
 
 HRESULT CCaptureVideo::Init(int iDeviceID, HWND hWnd)
 {
+//	return S_OK;
+
 	HRESULT hr;
 	hr = InitCaptureGraphBuilder();
 	if (FAILED(hr))
@@ -224,21 +254,26 @@ HRESULT CCaptureVideo::Init(int iDeviceID, HWND hWnd)
 		AfxMessageBox(_T("Failed to get video interfaces!"));
 		return hr;
 	}
-	// Bind Device Filter. We know the device because the id was passed in
-	if(!BindFilter(iDeviceID, &m_pBF))return S_FALSE;
-	hr = m_pGB->AddFilter(m_pBF, L"Capture Filter");
-	// hr = m_pCapture->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video,
-	// m_pBF, NULL, NULL);
-	// create a sample grabber
-	//hr = m_pGrabber.CoCreateInstance( CLSID_SampleGrabber );
-	hr = CoCreateInstance( CLSID_SampleGrabber, NULL, CLSCTX_INPROC_SERVER, IID_ISampleGrabber, (void**)&m_pGrabber );
-
+	
+		// Bind Device Filter. We know the device because the id was passed in
+		if(!BindFilter(iDeviceID, &m_pBF))
+			return S_FALSE;
+		hr = m_pGB->AddFilter(m_pBF, L"Capture Filter");
+		// hr = m_pCapture->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video,
+		// m_pBF, NULL, NULL);
+		// create a sample grabber
+		//hr = m_pGrabber.CoCreateInstance( CLSID_SampleGrabber );
+		hr = CoCreateInstance( CLSID_SampleGrabber, NULL, CLSCTX_INPROC_SERVER, IID_ISampleGrabber, (void**)&m_pGrabber );
+//	return S_OK;
+	
 	if( !m_pGrabber )
 	{
 		AfxMessageBox(_T("Fail to create SampleGrabber, maybe qedit.dll is not registered?"));
 		return hr;
 	}
+//	return S_OK;
 	CComQIPtr< IBaseFilter, &IID_IBaseFilter > pGrabBase( m_pGrabber );
+//	return S_OK;
 	//设置视频格式
 	AM_MEDIA_TYPE mt;
 	ZeroMemory(&mt, sizeof(AM_MEDIA_TYPE));
@@ -250,11 +285,13 @@ HRESULT CCaptureVideo::Init(int iDeviceID, HWND hWnd)
 		AfxMessageBox(_T("Fail to set media type!"));
 		return hr;
 	}
+//	return S_OK;
 	hr = m_pGB->AddFilter( pGrabBase, L"Grabber" );
 	if( FAILED( hr ) ){
 		AfxMessageBox(_T("Fail to put sample grabber in graph"));
 		return hr;
 	}
+//	return S_OK;
 	// try to render preview/capture pin
 	hr = m_pCapture->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video,m_pBF,pGrabBase,NULL);
 	if( FAILED( hr ) )
@@ -263,6 +300,10 @@ HRESULT CCaptureVideo::Init(int iDeviceID, HWND hWnd)
 			AfxMessageBox(_T("Can’t build the graph"));
 		return hr;
 	}
+
+//	this->ReleaseMem();
+//		return S_OK;
+
 	hr = m_pGrabber->GetConnectedMediaType( &mt );
 	if ( FAILED( hr) ){
 		AfxMessageBox(_T("Failt to read the connected media type"));
@@ -271,21 +312,26 @@ HRESULT CCaptureVideo::Init(int iDeviceID, HWND hWnd)
 	VIDEOINFOHEADER * vih = (VIDEOINFOHEADER*) mt.pbFormat;
 	G_mCB.lWidth = vih->bmiHeader.biWidth;
 	G_mCB.lHeight = vih->bmiHeader.biHeight;
-	G_PIC_Width	= G_mCB.lWidth / 3;
-	G_PIC_Height = G_mCB.lHeight / 3;
+
+	//G_PIC_Width	= G_mCB.lWidth / 3;
+	//G_PIC_Height = G_mCB.lHeight / 3;
+
 	FreeMediaType(mt);
-	hr = m_pGrabber->SetBufferSamples( FALSE );
+	hr = m_pGrabber->SetBufferSamples( false ); //原来为 false
 	hr = m_pGrabber->SetOneShot( FALSE );
 	hr = m_pGrabber->SetCallback( &G_mCB, 1 );
 	//设置视频捕捉窗口
 	m_hWnd = hWnd ;
 	SetupVideoWindow();
+	m_pMC->Release();
 	hr = m_pMC->Run();//开始视频捕捉
 	if(FAILED(hr))
 	{
 		AfxMessageBox(_T("Couldn’t run the graph!"));
 		return hr;
 	}
+
+
 	return S_OK;
 }
 bool CCaptureVideo::BindFilter(int deviceId, IBaseFilter **pFilter)
@@ -348,9 +394,12 @@ HRESULT CCaptureVideo::InitCaptureGraphBuilder()
 	hr = m_pGB->QueryInterface(IID_IMediaControl, (void **)&m_pMC);
 	if (FAILED(hr))
 		return hr;
+
 	hr = m_pGB->QueryInterface(IID_IVideoWindow, (LPVOID *) &m_pVW);
 	if (FAILED(hr))
 		return hr;
+
+	
 	return hr;
 }
 
